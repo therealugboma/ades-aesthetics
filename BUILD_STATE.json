@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "source_revision": "44a6480",
+  "source_revision": "7e1de7e",
   "working_tree": "dirty",
-  "verified_at": "2026-08-27T22:59:40.000Z",
+  "verified_at": "2026-08-27T23:27:08.000Z",
   "gates": {
     "tests": {
       "status": "passed",
       "command": "npm test",
-      "result": "14 passed, 0 failed"
+      "result": "15 passed, 0 failed"
     },
     "typecheck": {
       "status": "passed",
@@ -33,6 +33,10 @@
       "environment": "development",
       "result": "Schema deployed; service, availability, and authorization queries passed.",
       "evidence": "evidence/flows/F2_Booking/migration-state.json"
+    },
+    "production_admin": {
+      "status": "passed",
+      "result": "Production bcrypt hash verified; live login returned 200 and the test session was destroyed with logout 200."
     },
     "paystack_transaction": {
       "status": "unverified",
