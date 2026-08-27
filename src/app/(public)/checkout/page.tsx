@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/lib/cart-store";
 import { formatPrice } from "@/lib/utils";
 import { nigeriaStates, getLgas } from "@/lib/nigeria-states";
+import { initializePaystackPayment, loadPaystackScript } from "@/lib/paystack";
 
 interface DeliveryInfo {
   fullName: string;
@@ -49,6 +50,10 @@ export default function CheckoutPage() {
   const [selectedRate, setSelectedRate] = useState<ShippingRate | null>(null);
   const [loadingRates, setLoadingRates] = useState(false);
   const [ratesError, setRatesError] = useState("");
+
+  useEffect(() => {
+    loadPaystackScript().catch(() => {});
+  }, []);
 
   const subtotal = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -137,14 +142,45 @@ export default function CheckoutPage() {
   };
 
   const handlePayment = async () => {
+    if (!selectedRate || items.length === 0) return;
     setIsProcessing(true);
+
     try {
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      clearCart();
-      router.push("/order/success");
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+          })),
+          delivery,
+          shippingFee: selectedRate.fee,
+          total,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Checkout failed. Please try again.");
+        setIsProcessing(false);
+        return;
+      }
+
+      initializePaystackPayment({
+        email: delivery.email,
+        amount: total,
+        reference: data.reference,
+        onSuccess: () => {
+          clearCart();
+          router.push(`/order/success?ref=${data.reference}`);
+        },
+        onClose: () => {
+          setIsProcessing(false);
+        },
+      });
     } catch {
-      router.push("/order/failed");
-    } finally {
+      alert("Something went wrong. Please try again.");
       setIsProcessing(false);
     }
   };
