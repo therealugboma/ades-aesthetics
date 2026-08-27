@@ -95,8 +95,11 @@ export const getByReferenceWithOrder = query({
 
     let orderItems: number | null = null;
     if (payment.orderId) {
-      const order = await ctx.db.get(payment.orderId);
-      orderItems = order?.items?.length ?? 0;
+      const items = await ctx.db
+        .query("orderItems")
+        .withIndex("by_order", (q) => q.eq("orderId", payment.orderId!))
+        .collect();
+      orderItems = items.length;
     }
 
     return {
