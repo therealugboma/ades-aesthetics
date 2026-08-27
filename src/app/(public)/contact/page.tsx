@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 
 interface ContactForm {
   name: string;
@@ -58,9 +56,7 @@ export default function ContactPage() {
   };
 
   return (
-    <>
-      <Header />
-      <main className="flex-1">
+    <main className="flex-1">
         <section className="bg-gradient-to-br from-pink-100 via-rose-50 to-amber-50 py-16 sm:py-20">
           <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
             <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
@@ -409,8 +405,29 @@ export default function ContactPage() {
             </div>
           </div>
         </section>
+
+        <section className="bg-gray-50 py-12">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-6 text-center">
+              Find Us
+            </h2>
+            <div className="rounded-2xl overflow-hidden shadow-lg">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3964.7!2d3.5!3d6.6!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNsKwMzYnMDAuMCJOIDDCsDMwJzAwLjAiRQ!5e0!3m2!1sen!2sng!4v1"
+                width="100%"
+                height="400"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Ades Aesthetics Location"
+              />
+            </div>
+            <p className="mt-4 text-center text-sm text-gray-500">
+              34, Beach Road, Police Post Ebutte, Ikorodu, Lagos, Nigeria
+            </p>
+          </div>
+        </section>
       </main>
-      <Footer />
-    </>
   );
 }

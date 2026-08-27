@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
   title: "Booking Confirmed | Ades Aesthetics",
@@ -11,9 +9,7 @@ export const metadata: Metadata = {
 
 export default function BookingSuccessPage() {
   return (
-    <>
-      <Header />
-      <main className="flex-1 bg-gray-50">
+    <main className="flex-1 bg-gray-50">
         <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
           <div className="text-center">
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
@@ -106,7 +102,5 @@ export default function BookingSuccessPage() {
           </div>
         </div>
       </main>
-      <Footer />
-    </>
   );
 }

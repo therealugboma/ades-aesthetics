@@ -1,9 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
-
 const GalleryClient = dynamic(
   () => import("@/components/gallery/GalleryClient"),
   { ssr: false }
@@ -11,9 +8,7 @@ const GalleryClient = dynamic(
 
 export default function GalleryPage() {
   return (
-    <>
-      <Header />
-      <main className="flex-1">
+    <main className="flex-1">
         <section className="bg-gradient-to-br from-pink-100 via-rose-50 to-amber-50 py-16 sm:py-20">
           <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
             <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
@@ -30,7 +25,5 @@ export default function GalleryPage() {
           </div>
         </section>
       </main>
-      <Footer />
-    </>
   );
 }

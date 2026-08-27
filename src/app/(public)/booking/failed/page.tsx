@@ -1,19 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
-  title: "Order Failed | Ades Aesthetics",
+  title: "Payment Failed | Ades Aesthetics",
   description:
-    "There was an issue processing your order. Please try again or contact our support team.",
+    "There was an issue processing your payment. Please try again or contact support.",
 };
 
-export default function OrderFailedPage() {
+export default function BookingFailedPage() {
   return (
-    <>
-      <Header />
-      <main className="flex-1 bg-gray-50">
+    <main className="flex-1 bg-gray-50">
         <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
           <div className="text-center">
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
@@ -32,10 +28,11 @@ export default function OrderFailedPage() {
               </svg>
             </div>
             <h1 className="mt-8 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-              Order Failed
+              Payment Failed
             </h1>
             <p className="mt-4 text-lg text-gray-600">
-              We were unable to process your order. No payment has been charged.
+              We were unable to process your payment. No charges were made to
+              your account.
             </p>
           </div>
 
@@ -97,10 +94,10 @@ export default function OrderFailedPage() {
 
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Link
-              href="/checkout"
+              href="/booking"
               className="inline-flex items-center rounded-full bg-rose-600 px-8 py-3 text-sm font-semibold text-white shadow-sm hover:bg-rose-500 transition-colors"
             >
-              Retry Order
+              Retry Booking
             </Link>
             <a
               href="https://wa.me/2348012345678"
@@ -120,7 +117,5 @@ export default function OrderFailedPage() {
           </div>
         </div>
       </main>
-      <Footer />
-    </>
   );
 }

@@ -1,9 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
-
 const BookingForm = dynamic(
   () => import("@/components/booking/BookingForm"),
   { ssr: false }
@@ -11,9 +8,7 @@ const BookingForm = dynamic(
 
 export default function BookingPage() {
   return (
-    <>
-      <Header />
-      <main className="flex-1 bg-gray-50">
+    <main className="flex-1 bg-gray-50">
         <section className="bg-gradient-to-br from-pink-100 via-rose-50 to-amber-50 py-12">
           <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
             <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
@@ -28,7 +23,5 @@ export default function BookingPage() {
           <BookingForm />
         </section>
       </main>
-      <Footer />
-    </>
   );
 }

@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { Playfair_Display, Inter } from "next/font/google";
 import "./globals.css";
 import ConvexClientProvider from "@/lib/convex-provider";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 
 const playfairDisplay = Playfair_Display({
   variable: "--font-heading",
@@ -49,11 +47,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${playfairDisplay.variable} ${inter.variable}`}>
       <body className="min-h-screen bg-white font-body text-foreground antialiased">
-        <ConvexClientProvider>
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </ConvexClientProvider>
+        <ConvexClientProvider>{children}</ConvexClientProvider>
       </body>
     </html>
   );

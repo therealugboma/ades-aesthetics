@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
-
 export const metadata: Metadata = {
   title: "Ades Aesthetics | Premium Beauty Services in Lagos",
   description:
@@ -127,9 +124,7 @@ function formatPrice(price: number): string {
 
 export default function HomePage() {
   return (
-    <>
-      <Header />
-      <main className="flex-1">
+    <main className="flex-1">
         <section className="relative overflow-hidden bg-gradient-to-br from-pink-100 via-rose-50 to-amber-50">
           <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
             <div className="text-center">
@@ -452,7 +447,5 @@ export default function HomePage() {
           </div>
         </section>
       </main>
-      <Footer />
-    </>
   );
 }
