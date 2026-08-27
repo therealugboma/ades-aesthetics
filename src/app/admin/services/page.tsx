@@ -1,8 +1,8 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "convex/_generated/api";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 const categories = ["nails", "lashes", "brows", "skin", "other"] as const;
 
@@ -28,15 +28,30 @@ export default function AdminServicesPage() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState<ServiceForm>(emptyForm);
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const generateUploadUrl = useAction(api.upload.generateUploadUrl);
+  const getStorageUrl = useAction(api.upload.getStorageUrl);
 
   const slugify = (t: string) =>
     t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) {
+      setFile(f);
+      setPreview(URL.createObjectURL(f));
+    }
+  };
+
   const openAdd = () => {
     setEditing(null);
     setForm(emptyForm);
+    setFile(null);
+    setPreview("");
     setError("");
     setShowModal(true);
   };
@@ -51,6 +66,8 @@ export default function AdminServicesPage() {
       duration: String(s.duration),
       category: s.category,
     });
+    setFile(null);
+    setPreview(s.imageUrl || "");
     setError("");
     setShowModal(true);
   };
@@ -60,6 +77,19 @@ export default function AdminServicesPage() {
     setError("");
     setSaving(true);
     try {
+      let imageUrl = editing?.imageUrl || "";
+
+      if (file) {
+        const uploadUrl = await generateUploadUrl();
+        const result = await fetch(uploadUrl, {
+          method: "POST",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
+        const { storageId } = await result.json();
+        imageUrl = await getStorageUrl({ storageId: storageId as string });
+      }
+
       if (editing) {
         await updateService({
           id: editing._id,
@@ -69,6 +99,7 @@ export default function AdminServicesPage() {
           price: Number(form.price),
           duration: Number(form.duration),
           category: form.category,
+          imageUrl,
         });
       } else {
         await createService({
@@ -78,12 +109,15 @@ export default function AdminServicesPage() {
           price: Number(form.price),
           duration: Number(form.duration),
           category: form.category,
+          imageUrl,
           sortOrder: services?.length ?? 0,
         });
       }
       setShowModal(false);
       setForm(emptyForm);
       setEditing(null);
+      setFile(null);
+      setPreview("");
     } catch (err: any) {
       setError(err.message || "Failed to save service");
     } finally {
@@ -123,6 +157,28 @@ export default function AdminServicesPage() {
             {error && <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Service Photo</label>
+                <input ref={fileRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                <button type="button" onClick={() => fileRef.current?.click()}
+                  className="w-full rounded-lg border-2 border-dashed border-gray-300 p-6 text-center hover:border-rose-400 hover:bg-rose-50/50 transition-colors">
+                  {preview ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <img src={preview} alt="Preview" className="h-32 w-32 rounded-lg object-cover" />
+                      <span className="text-xs text-gray-500">Click to change</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2">
+                      <svg className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                      </svg>
+                      <span className="text-sm text-gray-600 font-medium">Click to upload photo</span>
+                      <span className="text-xs text-gray-400">PNG, JPG, WEBP</span>
+                    </div>
+                  )}
+                </button>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
                 <input type="text" required value={form.name}
@@ -202,8 +258,15 @@ export default function AdminServicesPage() {
             {services?.map((s: any) => (
               <tr key={s._id} className="hover:bg-gray-50">
                 <td className="px-4 py-3">
-                  <p className="font-medium text-gray-900">{s.name}</p>
-                  <p className="text-xs text-gray-500">{s.description?.slice(0, 60)}...</p>
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs overflow-hidden">
+                      {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : "IMG"}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{s.name}</p>
+                      <p className="text-xs text-gray-500">{s.description?.slice(0, 60)}...</p>
+                    </div>
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-gray-700 capitalize">{s.category}</td>
                 <td className="px-4 py-3 text-gray-700">₦{s.price?.toLocaleString()}</td>
