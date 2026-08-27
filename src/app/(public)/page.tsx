@@ -335,7 +335,27 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="flex items-center justify-center">
-                <div className="h-80 w-full rounded-2xl bg-gray-200" />
+                <a
+                  href="https://www.google.com/maps/search/34+Beach+Road+Police+Post+Ebutte+Ikorodu+Lagos+Nigeria"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-80 w-full flex-col items-center justify-center rounded-2xl border border-gray-200 bg-gradient-to-br from-rose-50 to-pink-50 p-8 text-center hover:shadow-lg transition-shadow"
+                >
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 mb-4">
+                    <svg className="h-7 w-7 text-rose-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-900">34, Beach Road, Ikorodu</p>
+                  <p className="text-xs text-gray-500 mt-1">Lagos, Nigeria</p>
+                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-rose-600">
+                    Get Directions
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                    </svg>
+                  </span>
+                </a>
               </div>
             </div>
           </div>
