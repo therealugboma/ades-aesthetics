@@ -39,6 +39,7 @@ export const getFeatured = query({
 
 export const create = mutation({
   args: {
+    sessionToken: v.string(),
     url: v.string(),
     alt: v.string(),
     category: v.union(
@@ -52,9 +53,13 @@ export const create = mutation({
     sortOrder: v.number(),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     return await ctx.db.insert("galleryImages", {
-      ...args,
+      url: args.url,
+      alt: args.alt,
+      category: args.category,
+      isFeatured: args.isFeatured,
+      sortOrder: args.sortOrder,
       createdAt: Date.now(),
     });
   },
@@ -62,6 +67,7 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
+    sessionToken: v.string(),
     id: v.id("galleryImages"),
     url: v.optional(v.string()),
     alt: v.optional(v.string()),
@@ -78,8 +84,10 @@ export const update = mutation({
     sortOrder: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
-    const { id, ...fields } = args;
+    await requireAdmin(ctx, args.sessionToken);
+    const fields: Partial<typeof args> = { ...args };
+    delete fields.id;
+    delete fields.sessionToken;
     const updates: Record<string, any> = {};
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) {
@@ -89,15 +97,15 @@ export const update = mutation({
     if (Object.keys(updates).length === 0) {
       throw new Error("No fields to update");
     }
-    await ctx.db.patch(id, updates);
-    return id;
+    await ctx.db.patch(args.id, updates);
+    return args.id;
   },
 });
 
 export const remove = mutation({
-  args: { id: v.id("galleryImages") },
+  args: { sessionToken: v.string(), id: v.id("galleryImages") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     await ctx.db.delete(args.id);
     return args.id;
   },

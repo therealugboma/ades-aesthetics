@@ -1,0 +1,14 @@
+{
+  "generatedAt": "2026-08-27T18:35:05.487Z",
+  "environment": "development",
+  "deploymentOrigin": "https://famous-possum-319.eu-west-1.convex.cloud",
+  "trackedSchema": "convex/schema.ts",
+  "schemaSha256": "cb7f27d0126b2d35d806d5c4814117afaf20f36abba2485f2f127a3b667686f3",
+  "appliedSchema": true,
+  "authorizationBoundaryVerified": true,
+  "migrationLedger": {
+    "status": "not-applicable",
+    "reason": "Convex deploys the declarative schema; this project has no migration ledger."
+  },
+  "openRecoveryFindings": []
+}

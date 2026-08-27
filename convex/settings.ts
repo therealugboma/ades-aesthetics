@@ -16,11 +16,12 @@ export const get = query({
 
 export const update = mutation({
   args: {
+    sessionToken: v.string(),
     key: v.string(),
     value: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     const existing = await ctx.db
       .query("businessSettings")
       .withIndex("by_key", (q) => q.eq("key", args.key))

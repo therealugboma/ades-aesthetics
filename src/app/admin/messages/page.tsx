@@ -3,9 +3,14 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { useState } from "react";
+import { useAdminAuth } from "@/lib/admin-auth-context";
 
 export default function AdminMessagesPage() {
-  const messages = useQuery(api.contactMessages.list);
+  const { sessionToken } = useAdminAuth();
+  const messages = useQuery(
+    api.contactMessages.list,
+    sessionToken ? { sessionToken } : "skip"
+  );
   const markRead = useMutation(api.contactMessages.markRead);
   const removeMessage = useMutation(api.contactMessages.remove);
   const [selected, setSelected] = useState<any>(null);
@@ -32,7 +37,10 @@ export default function AdminMessagesPage() {
           {messages?.map((m: any) => (
             <button
               key={m._id}
-              onClick={() => { setSelected(m); if (!m.isRead) markRead({ id: m._id }); }}
+              onClick={() => {
+                setSelected(m);
+                if (!m.isRead) markRead({ sessionToken: sessionToken!, id: m._id });
+              }}
               className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${
                 selected?._id === m._id ? "bg-rose-50" : ""
               } ${!m.isRead ? "border-l-4 border-rose-500" : ""}`}
@@ -67,7 +75,7 @@ export default function AdminMessagesPage() {
                 <button
                   onClick={async () => {
                     if (confirm("Delete this message?")) {
-                      await removeMessage({ id: selected._id });
+                      await removeMessage({ sessionToken: sessionToken!, id: selected._id });
                       setSelected(null);
                     }
                   }}

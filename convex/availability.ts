@@ -1,5 +1,12 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
+import {
+  APPOINTMENT_BUFFER_MINUTES,
+  appointmentBlocksAvailability,
+  bookingDateTimeMs,
+  createAvailableSlots,
+  timeToMinutes,
+} from "./lib/booking";
 
 export const getAvailableSlots = query({
   args: {
@@ -21,8 +28,9 @@ export const getAvailableSlots = query({
       .withIndex("by_date", (q) => q.eq("date", args.date))
       .collect();
 
-    const activeAppointments = existingAppointments.filter(
-      (a) => a.status !== "cancelled"
+    const now = Date.now();
+    const activeAppointments = existingAppointments.filter((appointment) =>
+      appointmentBlocksAvailability(appointment, now)
     );
 
     const appointmentIntervals = await Promise.all(
@@ -45,43 +53,20 @@ export const getAvailableSlots = query({
       end: timeToMinutes(b.endTime),
     }));
 
-    const allIntervals = [
+    const occupiedIntervals = [
       ...appointmentIntervals.filter(Boolean) as { start: number; end: number }[],
       ...blockedIntervals,
     ];
 
-    const buffer = 30;
     const dayStart = openingHour * 60;
     const dayEnd = closingHour * 60;
-    const serviceDuration = service.duration;
-
-    const availableSlots: string[] = [];
-
-    for (let minutes = dayStart; minutes + serviceDuration <= dayEnd; minutes += slotInterval) {
-      const slotStart = minutes;
-      const slotEnd = minutes + serviceDuration;
-
-      const isBlocked = allIntervals.some(
-        (interval) =>
-          slotStart < interval.end + buffer && slotEnd > interval.start - buffer
-      );
-
-      if (!isBlocked) {
-        availableSlots.push(minutesToTime(minutes));
-      }
-    }
-
-    return availableSlots;
+    return createAvailableSlots({
+      serviceDuration: service.duration,
+      openingMinutes: dayStart,
+      closingMinutes: dayEnd,
+      slotInterval,
+      bufferMinutes: APPOINTMENT_BUFFER_MINUTES,
+      occupiedIntervals,
+    }).filter((time) => bookingDateTimeMs(args.date, time) > now);
   },
 });
-
-function timeToMinutes(time: string): number {
-  const [hours, minutes] = time.split(":").map(Number);
-  return hours * 60 + minutes;
-}
-
-function minutesToTime(minutes: number): string {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
-}

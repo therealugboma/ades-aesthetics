@@ -1,4 +1,4 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "./helpers";
 
@@ -14,17 +14,17 @@ export const list = query({
 });
 
 export const listAll = query({
-  args: {},
-  handler: async (ctx) => {
-    await requireAdmin(ctx);
+  args: { sessionToken: v.string() },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.sessionToken);
     return await ctx.db.query("products").order("desc").collect();
   },
 });
 
 export const listCategories = query({
-  args: {},
-  handler: async (ctx) => {
-    await requireAdmin(ctx);
+  args: { sessionToken: v.string() },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.sessionToken);
     return await ctx.db.query("productCategories").collect();
   },
 });
@@ -42,6 +42,7 @@ export const getBySlug = query({
 
 export const create = mutation({
   args: {
+    sessionToken: v.string(),
     name: v.string(),
     slug: v.string(),
     description: v.string(),
@@ -52,7 +53,7 @@ export const create = mutation({
     isFeatured: v.boolean(),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     const existing = await ctx.db
       .query("products")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
@@ -61,7 +62,14 @@ export const create = mutation({
       throw new Error("A product with this slug already exists");
     }
     return await ctx.db.insert("products", {
-      ...args,
+      name: args.name,
+      slug: args.slug,
+      description: args.description,
+      price: args.price,
+      categoryId: args.categoryId,
+      imageUrl: args.imageUrl,
+      stock: args.stock,
+      isFeatured: args.isFeatured,
       isActive: true,
       createdAt: Date.now(),
     });
@@ -70,6 +78,7 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
+    sessionToken: v.string(),
     id: v.id("products"),
     name: v.optional(v.string()),
     slug: v.optional(v.string()),
@@ -82,8 +91,10 @@ export const update = mutation({
     isFeatured: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
-    const { id, ...fields } = args;
+    await requireAdmin(ctx, args.sessionToken);
+    const fields: Partial<typeof args> = { ...args };
+    delete fields.id;
+    delete fields.sessionToken;
     const updates: Record<string, any> = {};
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) {
@@ -93,21 +104,21 @@ export const update = mutation({
     if (Object.keys(updates).length === 0) {
       throw new Error("No fields to update");
     }
-    await ctx.db.patch(id, updates);
-    return id;
+    await ctx.db.patch(args.id, updates);
+    return args.id;
   },
 });
 
 export const remove = mutation({
-  args: { id: v.id("products") },
+  args: { sessionToken: v.string(), id: v.id("products") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     await ctx.db.patch(args.id, { isActive: false });
     return args.id;
   },
 });
 
-export const reduceStock = mutation({
+export const reduceStock = internalMutation({
   args: {
     productId: v.id("products"),
     quantity: v.number(),

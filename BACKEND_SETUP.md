@@ -5,10 +5,18 @@
 - Paystack: Payment processing (Nigerian Naira)
 
 ## Environment variables
-- NEXT_PUBLIC_CONVEX_URL: Convex deployment URL
-- PAYSTACK_SECRET_KEY: Paystack API secret (server only)
-- PAYSTACK_PUBLIC_KEY: Paystack public key (client)
-- PAYSTACK_WEBHOOK_SECRET: HMAC secret for webhook verification
+
+Next.js / Vercel:
+
+- `NEXT_PUBLIC_CONVEX_URL`: Convex deployment URL
+- `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY`: Paystack public key exposed to the checkout widget
+- `PAYSTACK_SECRET_KEY`: Paystack secret used only by route handlers
+- `ADMIN_JWT_SECRET`: Long random value used to sign the HTTP-only admin cookie; required in production
+
+Convex deployment:
+
+- `PAYSTACK_SECRET_KEY`: Paystack secret used to verify transactions and webhook signatures
+- `SEED_TOKEN`: Long random value required by the seed mutation
 
 ## Database schema
 See convex/schema.ts for complete schema. Key tables:
@@ -17,9 +25,19 @@ See convex/schema.ts for complete schema. Key tables:
 - galleryImages, blockedTimes, businessSettings, contactMessages
 
 ## Seed data
-Run the seed mutation to populate development data:
+Configure `SEED_TOKEN` in the Convex deployment, then invoke `seed:seed` with matching
+`seedToken`, `adminEmail`, and an `adminPassword` of at least 12 characters. The mutation
+populates development data only when the settings table is empty:
+
 - 7 sample services across nail/lash/brow categories
 - 4 product categories with 8 products
 - 9 gallery images
 - Business settings (hours, deposit %, contact info)
-- Admin user (admin@adesaesthetics.com)
+- The administrator account supplied in the mutation arguments
+
+## Booking activation
+
+The Next.js app and Convex functions must be deployed together. The booking schema includes
+expiring appointment holds, and payment finalization verifies the Paystack amount and currency
+before confirming an appointment. Deploy the Convex schema/functions to the intended environment
+before deploying the matching Next.js build.

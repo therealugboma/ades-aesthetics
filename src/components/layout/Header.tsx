@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/lib/cart-store";
 import MobileNav from "./MobileNav";
@@ -18,15 +19,14 @@ const navLinks = [
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [activePath, setActivePath] = useState("/");
   const [cartOpen, setCartOpen] = useState(false);
+  const activePath = usePathname();
   const items = useCartStore((s) => s.items);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
   useEffect(() => {
-    setActivePath(window.location.pathname);
     const handleScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);

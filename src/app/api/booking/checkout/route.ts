@@ -1,96 +1,90 @@
-import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
+import { ConvexHttpClient } from "convex/browser";
+import { ConvexError } from "convex/values";
+import { NextResponse } from "next/server";
+import { api } from "convex/_generated/api";
+import type { Id } from "convex/_generated/dataModel";
 
-async function convexMutation(path: string, args: Record<string, unknown>) {
+type CheckoutBody = {
+  serviceId?: unknown;
+  date?: unknown;
+  time?: unknown;
+  name?: unknown;
+  email?: unknown;
+  phone?: unknown;
+  notes?: unknown;
+};
+
+type BookingErrorData = {
+  code?: string;
+  message?: string;
+};
+
+function getConvexClient() {
   const url = process.env.NEXT_PUBLIC_CONVEX_URL;
   if (!url) throw new Error("Convex not configured");
-  const res = await fetch(`${url}/api/mutation`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path, args }),
-  });
-  const result = await res.json();
-  if (result.status !== "success") {
-    throw new Error(result.errorMessage || result.message || `Failed: ${path}`);
-  }
-  return result.value;
+  return new ConvexHttpClient(url);
 }
 
-async function convexQuery(path: string, args: Record<string, unknown>) {
-  const url = process.env.NEXT_PUBLIC_CONVEX_URL;
-  if (!url) throw new Error("Convex not configured");
-  const res = await fetch(`${url}/api/query`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path, args }),
-  });
-  const result = await res.json();
-  if (result.status !== "success") {
-    throw new Error(result.message || `Failed: ${path}`);
-  }
-  return result.value;
-}
-
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    console.log("Booking checkout: request received");
-    const { serviceId, servicePrice, date, time, name, email, phone, notes } =
-      await request.json();
+    const body = (await request.json()) as CheckoutBody;
+    const { serviceId, date, time, name, email, phone, notes } = body;
 
-    if (!serviceId || !date || !time || !email || typeof servicePrice !== "number") {
+    if (
+      typeof serviceId !== "string" ||
+      typeof date !== "string" ||
+      typeof time !== "string" ||
+      typeof name !== "string" ||
+      typeof email !== "string" ||
+      typeof phone !== "string" ||
+      (notes !== undefined && typeof notes !== "string")
+    ) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Please complete all required booking details." },
         { status: 400 }
       );
     }
 
-    // 1. Find or create customer
-    const customerId = await convexMutation("customers:getOrCreate", {
-      name: name || email,
-      email,
-      phone: phone || "",
-    });
-
-    // 2. Create appointment (validates availability + block)
-    console.log("Booking checkout: calling appointments:create with args:", { customerId, serviceId, date, time, notes });
-    const appointmentId = await convexMutation("appointments:create", {
-      customerId,
-      serviceId,
-      date,
-      time,
-      notes,
-    });
-
-    // Deposit (30%)
-    const depositAmount = Math.max(Math.round(servicePrice * 0.3), 1);
-    const reference = `BK-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-
-    // 3. Create pending payment record
-    await convexMutation("payments:create", {
-      reference,
-      appointmentId,
-      amount: depositAmount,
-      currency: "NGN",
-      metadata: JSON.stringify({
-        customerName: name,
-        customerEmail: email,
-        customerPhone: phone,
-        appointmentId,
-        totalAmount: servicePrice,
-        depositAmount,
-      }),
-    });
+    const reference = `BK-${randomUUID()}`;
+    const result = await getConvexClient().mutation(
+      api.appointments.createCheckout,
+      {
+        serviceId: serviceId as Id<"services">,
+        date,
+        time,
+        name,
+        email,
+        phone,
+        notes,
+        reference,
+      }
+    );
 
     return NextResponse.json({
       reference,
-      appointmentId,
-      amount: depositAmount,
-      email,
-      customerName: name,
+      appointmentId: result.appointmentId,
+      amount: result.amount,
+      totalAmount: result.totalAmount,
+      depositPercentage: result.depositPercentage,
+      expiresAt: result.expiresAt,
     });
   } catch (error) {
-    console.error("Booking checkout error:", error);
+    if (error instanceof ConvexError) {
+      const data = error.data as BookingErrorData;
+      const status = data.code === "SLOT_UNAVAILABLE" ? 409 : 400;
+      return NextResponse.json(
+        { error: data.message || "Booking could not be completed.", code: data.code },
+        { status }
+      );
+    }
+
+    console.error(
+      "Booking checkout failed:",
+      error instanceof Error ? error.message : "Unknown error"
+    );
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Booking failed" },
+      { error: "We could not start your booking. Please try again." },
       { status: 500 }
     );
   }

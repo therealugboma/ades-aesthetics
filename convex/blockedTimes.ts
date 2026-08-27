@@ -19,13 +19,14 @@ export const list = query({
 
 export const create = mutation({
   args: {
+    sessionToken: v.string(),
     date: v.string(),
     startTime: v.string(),
     endTime: v.string(),
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     if (args.startTime >= args.endTime) {
       throw new Error("End time must be after start time");
     }
@@ -40,9 +41,9 @@ export const create = mutation({
 });
 
 export const remove = mutation({
-  args: { id: v.id("blockedTimes") },
+  args: { sessionToken: v.string(), id: v.id("blockedTimes") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     await ctx.db.delete(args.id);
     return args.id;
   },

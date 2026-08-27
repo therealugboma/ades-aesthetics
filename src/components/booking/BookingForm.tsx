@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
+import type { Doc } from "convex/_generated/dataModel";
 import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
 import { initializePaystackPayment, loadPaystackScript } from "@/lib/paystack";
@@ -17,8 +18,11 @@ interface FormData {
 export default function BookingForm() {
   const router = useRouter();
   const services = useQuery(api.services.list);
+  const depositSetting = useQuery(api.settings.getByKey, {
+    key: "deposit_percentage",
+  });
   const [step, setStep] = useState(1);
-  const [selectedService, setSelectedService] = useState<any>(null);
+  const [selectedService, setSelectedService] = useState<Doc<"services"> | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [formData, setFormData] = useState<FormData>({
@@ -28,12 +32,21 @@ export default function BookingForm() {
     notes: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
+
+  const availableSlots = useQuery(
+    api.availability.getAvailableSlots,
+    selectedService && selectedDate
+      ? { serviceId: selectedService._id, date: selectedDate }
+      : "skip"
+  );
 
   useEffect(() => {
     loadPaystackScript().catch(() => {});
   }, []);
 
-  const today = new Date();  const daysInMonth = new Date(
+  const today = new Date();
+  const daysInMonth = new Date(
     today.getFullYear(),
     today.getMonth() + 1,
     0
@@ -44,11 +57,7 @@ export default function BookingForm() {
   for (let i = 0; i < firstDay; i++) calendarDays.push(null);
   for (let i = 1; i <= daysInMonth; i++) calendarDays.push(i);
 
-  const timeSlots = [
-    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-    "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
-    "15:00", "15:30", "16:00", "16:30", "17:00", "17:30",
-  ];
+  const depositPercentage = Number(depositSetting?.value) || 30;
 
   if (services === undefined) {
     return (
@@ -63,14 +72,16 @@ export default function BookingForm() {
   const handleSubmit = async () => {
     if (!selectedService || !selectedDate || !selectedTime) return;
     setIsSubmitting(true);
+    setCheckoutError("");
+    let reference: string | undefined;
 
     try {
+      await loadPaystackScript();
       const res = await fetch("/api/booking/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           serviceId: selectedService._id,
-          servicePrice: selectedService.price,
           date: selectedDate,
           time: selectedTime,
           name: formData.name,
@@ -82,35 +93,34 @@ export default function BookingForm() {
 
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || "Booking failed. Please try again.");
+        setCheckoutError(data.error || "Booking failed. Please try again.");
+        if (res.status === 409) {
+          setSelectedTime("");
+          setStep(2);
+        }
         setIsSubmitting(false);
         return;
       }
 
+      reference = data.reference;
       initializePaystackPayment({
         email: formData.email,
         amount: data.amount,
         reference: data.reference,
-        onSuccess: async () => {
-          try {
-            const statusRes = await fetch(`/api/payment/status?ref=${encodeURIComponent(data.reference)}`);
-            const statusData = await statusRes.json();
-            if (statusRes.ok && statusData.payment && (statusData.payment.status === "success")) {
-              router.push(`/booking/success?ref=${data.reference}`);
-            } else {
-              router.push("/booking/failed");
-            }
-          } catch {
-            router.push(`/booking/success?ref=${data.reference}`);
-          }
+        onSuccess: () => {
+          router.push(`/booking/success?ref=${encodeURIComponent(data.reference)}`);
         },
         onClose: () => {
+          void releaseBookingReservation(data.reference);
           setIsSubmitting(false);
         },
       });
     } catch (err) {
       console.error(err);
-      alert("Something went wrong. Please try again.");
+      if (reference) await releaseBookingReservation(reference);
+      setCheckoutError(
+        "We could not open the secure payment window. Please try again."
+      );
       setIsSubmitting(false);
     }
   };
@@ -148,11 +158,14 @@ export default function BookingForm() {
 
       {step === 1 && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {services.map((service: any) => (
+          {services.map((service) => (
             <button
               key={service._id}
               onClick={() => {
                 setSelectedService(service);
+                setSelectedDate("");
+                setSelectedTime("");
+                setCheckoutError("");
                 setStep(2);
               }}
               className={`rounded-xl border-2 p-4 text-left transition-all ${
@@ -200,18 +213,20 @@ export default function BookingForm() {
                   key={i}
                   disabled={
                     !day ||
-                    new Date(today.getFullYear(), today.getMonth(), day) < today
+                    day < today.getDate()
                   }
-                  onClick={() =>
-                    day &&
+                  onClick={() => {
+                    if (!day) return;
                     setSelectedDate(
                       `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
-                    )
-                  }
+                    );
+                    setSelectedTime("");
+                    setCheckoutError("");
+                  }}
                   className={`aspect-square rounded-lg p-2 text-sm transition-colors ${
                     !day
                       ? ""
-                      : new Date(today.getFullYear(), today.getMonth(), day) < today
+                      : day < today.getDate()
                         ? "text-gray-300"
                         : selectedDate ===
                             `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
@@ -228,8 +243,19 @@ export default function BookingForm() {
           {selectedDate && (
             <div>
               <h3 className="mb-3 font-medium text-gray-900">Available Times</h3>
-              <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-                {timeSlots.map((time) => (
+              {availableSlots === undefined ? (
+                <div className="grid grid-cols-4 gap-2 sm:grid-cols-6" aria-label="Loading available times">
+                  {Array.from({ length: 8 }).map((_, index) => (
+                    <div key={index} className="h-10 animate-pulse rounded-lg bg-gray-100" />
+                  ))}
+                </div>
+              ) : availableSlots.length === 0 ? (
+                <p className="rounded-lg bg-amber-50 p-4 text-sm text-amber-800" role="status">
+                  No times are available on this date. Please choose another day.
+                </p>
+              ) : (
+                <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                {availableSlots.map((time) => (
                   <button
                     key={time}
                     onClick={() => {
@@ -245,7 +271,13 @@ export default function BookingForm() {
                     {time}
                   </button>
                 ))}
-              </div>
+                </div>
+              )}
+              {checkoutError && step === 2 && (
+                <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">
+                  {checkoutError}
+                </p>
+              )}
             </div>
           )}
 
@@ -364,10 +396,12 @@ export default function BookingForm() {
               <div className="border-t border-gray-200 pt-3">
                 <div className="flex justify-between">
                   <span className="font-medium text-gray-900">
-                    Deposit (30%)
+                    Deposit ({depositPercentage}%)
                   </span>
                   <span className="font-bold text-rose-600">
-                    {formatPrice(Math.round(selectedService.price * 0.3))}
+                    {formatPrice(
+                      Math.round(selectedService.price * (depositPercentage / 100))
+                    )}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-400">
@@ -377,6 +411,11 @@ export default function BookingForm() {
               </div>
             </div>
           </div>
+          {checkoutError && step === 4 && (
+            <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">
+              {checkoutError}
+            </p>
+          )}
           <div className="mt-6 flex gap-3">
             <button
               onClick={() => setStep(3)}
@@ -396,4 +435,17 @@ export default function BookingForm() {
       )}
     </div>
   );
+}
+
+async function releaseBookingReservation(reference: string) {
+  try {
+    await fetch("/api/booking/release", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reference }),
+      keepalive: true,
+    });
+  } catch {
+    // The server-side expiry is the fallback if release cannot be delivered.
+  }
 }

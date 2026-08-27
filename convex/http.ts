@@ -1,49 +1,8 @@
 import { httpRouter } from "convex/server";
-import { httpAction, internalMutation } from "./_generated/server";
-import { v } from "convex/values";
+import { httpAction } from "./_generated/server";
+import { internal } from "./_generated/api";
 
 const http = httpRouter();
-
-const processPayment = internalMutation({
-  args: {
-    reference: v.string(),
-    amount: v.number(),
-    metadata: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const existing = await ctx.db
-      .query("payments")
-      .withIndex("by_reference", (q) => q.eq("reference", args.reference))
-      .collect();
-
-    if (existing.length === 0) {
-      throw new Error(
-        "Payment record not found for reference: " + args.reference
-      );
-    }
-
-    const payment = existing[0];
-
-    if (payment.status === "success" || payment.status === "failed") {
-      return payment._id;
-    }
-
-    await ctx.db.patch(payment._id, {
-      status: "success",
-      metadata: args.metadata,
-    });
-
-    if (payment.appointmentId) {
-      await ctx.db.patch(payment.appointmentId, { status: "confirmed" });
-    }
-
-    if (payment.orderId) {
-      await ctx.db.patch(payment.orderId, { status: "paid" });
-    }
-
-    return payment._id;
-  },
-});
 
 const handlePaystackWebhook = httpAction(async (ctx, request) => {
   const secretKey = process.env.PAYSTACK_SECRET_KEY;
@@ -86,17 +45,21 @@ const handlePaystackWebhook = httpAction(async (ctx, request) => {
   if (event.event === "charge.success") {
     const data = event.data;
     const reference = data.reference;
-    const amount = data.amount / 100;
-    const metadata = JSON.stringify(data.metadata || {});
+    const metadata = data.metadata || {};
 
     try {
-      await ctx.runMutation(processPayment as any, {
+      await ctx.runMutation(internal.payments.finalizeVerified, {
         reference,
-        amount,
-        metadata,
+        amountKobo: data.amount,
+        currency: data.currency,
+        metadata:
+          Object.keys(metadata).length > 0
+            ? JSON.stringify(metadata)
+            : undefined,
       });
     } catch (error) {
       console.error("Failed to process payment:", error);
+      return new Response("Payment processing failed", { status: 500 });
     }
   }
 

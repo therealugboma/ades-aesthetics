@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "source_revision": "deb2813",
+  "working_tree": "dirty",
+  "verified_at": "2026-08-27T18:35:05.487Z",
+  "gates": {
+    "tests": {
+      "status": "passed",
+      "command": "npm test",
+      "result": "13 passed, 0 failed"
+    },
+    "typecheck": {
+      "status": "passed",
+      "command": "npx tsc --noEmit --pretty false"
+    },
+    "lint": {
+      "status": "passed_with_warnings",
+      "command": "npm run lint",
+      "result": "0 errors, 75 pre-existing warnings"
+    },
+    "build": {
+      "status": "passed",
+      "command": "npm run build:verify",
+      "result": "47 routes built"
+    },
+    "local_runtime": {
+      "status": "passed",
+      "command": "npm run verify:runtime",
+      "evidence": "evidence/flows/F2_Booking/runtime-proof.json"
+    },
+    "remote_convex": {
+      "status": "passed",
+      "environment": "development",
+      "result": "Schema deployed; service, availability, and authorization queries passed.",
+      "evidence": "evidence/flows/F2_Booking/migration-state.json"
+    },
+    "paystack_transaction": {
+      "status": "unverified",
+      "reason": "No real Paystack transaction was performed."
+    }
+  },
+  "migration_state": {
+    "status": "remote-pass",
+    "schema_sha256": "cb7f27d0126b2d35d806d5c4814117afaf20f36abba2485f2f127a3b667686f3"
+  }
+}

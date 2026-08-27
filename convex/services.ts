@@ -24,15 +24,16 @@ export const getBySlug = query({
 });
 
 export const getAll = query({
-  args: {},
-  handler: async (ctx) => {
-    await requireAdmin(ctx);
+  args: { sessionToken: v.string() },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.sessionToken);
     return await ctx.db.query("services").collect();
   },
 });
 
 export const create = mutation({
   args: {
+    sessionToken: v.string(),
     name: v.string(),
     slug: v.string(),
     description: v.string(),
@@ -49,7 +50,7 @@ export const create = mutation({
     sortOrder: v.number(),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     const existing = await ctx.db
       .query("services")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
@@ -58,7 +59,14 @@ export const create = mutation({
       throw new Error("A service with this slug already exists");
     }
     return await ctx.db.insert("services", {
-      ...args,
+      name: args.name,
+      slug: args.slug,
+      description: args.description,
+      price: args.price,
+      duration: args.duration,
+      category: args.category,
+      imageUrl: args.imageUrl,
+      sortOrder: args.sortOrder,
       isActive: true,
     });
   },
@@ -66,6 +74,7 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
+    sessionToken: v.string(),
     id: v.id("services"),
     name: v.optional(v.string()),
     slug: v.optional(v.string()),
@@ -86,8 +95,10 @@ export const update = mutation({
     sortOrder: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
-    const { id, ...fields } = args;
+    await requireAdmin(ctx, args.sessionToken);
+    const fields: Partial<typeof args> = { ...args };
+    delete fields.id;
+    delete fields.sessionToken;
     const updates: Record<string, any> = {};
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) {
@@ -97,15 +108,15 @@ export const update = mutation({
     if (Object.keys(updates).length === 0) {
       throw new Error("No fields to update");
     }
-    await ctx.db.patch(id, updates);
-    return id;
+    await ctx.db.patch(args.id, updates);
+    return args.id;
   },
 });
 
 export const remove = mutation({
-  args: { id: v.id("services") },
+  args: { sessionToken: v.string(), id: v.id("services") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     await ctx.db.patch(args.id, { isActive: false });
     return args.id;
   },
@@ -113,6 +124,7 @@ export const remove = mutation({
 
 export const reorder = mutation({
   args: {
+    sessionToken: v.string(),
     items: v.array(
       v.object({
         id: v.id("services"),
@@ -121,7 +133,7 @@ export const reorder = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     for (const item of args.items) {
       await ctx.db.patch(item.id, { sortOrder: item.sortOrder });
     }

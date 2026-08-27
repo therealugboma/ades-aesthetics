@@ -27,38 +27,35 @@ export const verifySession = query({
 });
 
 export const cleanupExpiredSession = mutation({
-  args: { userId: v.id("users") },
+  args: { sessionToken: v.string() },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.userId, {
+    const users = await ctx.db
+      .query("users")
+      .withIndex("by_sessionToken", (q) => q.eq("sessionToken", args.sessionToken))
+      .collect();
+    const user = users[0];
+    if (!user || !user.sessionExpiry || user.sessionExpiry >= Date.now()) return null;
+    await ctx.db.patch(user._id, {
       sessionToken: undefined,
       sessionExpiry: undefined,
     });
-    return args.userId;
-  },
-});
-
-export const createSession = mutation({
-  args: {
-    userId: v.id("users"),
-    sessionToken: v.string(),
-    expiry: v.number(),
-  },
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.userId, {
-      sessionToken: args.sessionToken,
-      sessionExpiry: args.expiry,
-    });
-    return args.userId;
+    return user._id;
   },
 });
 
 export const destroySession = mutation({
-  args: { userId: v.id("users") },
+  args: { sessionToken: v.string() },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.userId, {
+    const users = await ctx.db
+      .query("users")
+      .withIndex("by_sessionToken", (q) => q.eq("sessionToken", args.sessionToken))
+      .collect();
+    const user = users[0];
+    if (!user) return null;
+    await ctx.db.patch(user._id, {
       sessionToken: undefined,
       sessionExpiry: undefined,
     });
-    return args.userId;
+    return user._id;
   },
 });

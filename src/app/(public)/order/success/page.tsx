@@ -18,13 +18,10 @@ function OrderSuccessContent() {
   const searchParams = useSearchParams();
   const ref = searchParams.get("ref");
   const [order, setOrder] = useState<OrderDetails | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(ref));
 
   useEffect(() => {
-    if (!ref) {
-      setLoading(false);
-      return;
-    }
+    if (!ref) return;
 
     const timer = setTimeout(async () => {
       try {

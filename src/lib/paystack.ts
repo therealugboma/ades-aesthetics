@@ -14,6 +14,8 @@ declare global {
   }
 }
 
+let paystackScriptPromise: Promise<void> | null = null;
+
 export function initializePaystackPayment({
   email,
   amount,
@@ -45,21 +47,39 @@ export function initializePaystackPayment({
 }
 
 export function loadPaystackScript(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (typeof window === "undefined") {
-      reject(new Error("Cannot load script on server"));
-      return;
-    }
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("Cannot load script on server"));
+  }
+  if (window.PaystackPop) return Promise.resolve();
+  if (paystackScriptPromise) return paystackScriptPromise;
 
-    if (document.querySelector('script[src*="paystack"]')) {
-      resolve();
-      return;
-    }
+  paystackScriptPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(
+      'script[src*="js.paystack.co/v1/inline.js"]'
+    );
+    const script = existing ?? document.createElement("script");
 
-    const script = document.createElement("script");
-    script.src = "https://js.paystack.co/v1/inline.js";
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Failed to load Paystack script"));
-    document.head.appendChild(script);
+    const handleLoad = () => {
+      if (window.PaystackPop) {
+        resolve();
+      } else {
+        paystackScriptPromise = null;
+        reject(new Error("Paystack loaded without exposing its checkout API"));
+      }
+    };
+    const handleError = () => {
+      paystackScriptPromise = null;
+      reject(new Error("Failed to load Paystack script"));
+    };
+
+    script.addEventListener("load", handleLoad, { once: true });
+    script.addEventListener("error", handleError, { once: true });
+    if (!existing) {
+      script.src = "https://js.paystack.co/v1/inline.js";
+      script.async = true;
+      document.head.appendChild(script);
+    }
   });
+
+  return paystackScriptPromise;
 }

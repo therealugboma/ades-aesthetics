@@ -1,21 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
+import { createHmac, timingSafeEqual } from "node:crypto";
+import { ConvexHttpClient } from "convex/browser";
+import { NextResponse } from "next/server";
+import { api } from "convex/_generated/api";
 
-async function convexMutation(path: string, args: Record<string, unknown>) {
-  const url = process.env.NEXT_PUBLIC_CONVEX_URL;
-  if (!url) throw new Error("Convex not configured");
-  const res = await fetch(`${url}/api/mutation`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path, args }),
-  });
-  const data = await res.json();
-  if (data.status !== "success") {
-    throw new Error(data.message || `Failed: ${path}`);
-  }
-  return data.value;
+function validSignature(body: string, signature: string, secret: string) {
+  const expected = Buffer.from(
+    createHmac("sha512", secret).update(body).digest("hex"),
+    "hex"
+  );
+  const received = Buffer.from(signature, "hex");
+  return received.length === expected.length && timingSafeEqual(received, expected);
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const secretKey = process.env.PAYSTACK_SECRET_KEY;
     if (!secretKey) {
@@ -28,45 +25,28 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.text();
-
-    // Verify signature
-    const encoder = new TextEncoder();
-    const key = await crypto.subtle.importKey(
-      "raw",
-      encoder.encode(secretKey),
-      { name: "HMAC", hash: "SHA-512" },
-      false,
-      ["sign"]
-    );
-    const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
-    const computedSignature = Array.from(new Uint8Array(signatureBuffer))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-
-    if (computedSignature !== signature) {
+    if (!validSignature(body, signature, secretKey)) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
-    const event = JSON.parse(body);
-
-    if (event.event === "charge.success") {
-      const data = event.data;
-      const reference = data.reference;
-      const amount = data.amount / 100;
-      const metadata = JSON.stringify(data.metadata || {});
-
-      await convexMutation("payments:updateByReference", {
-        reference,
-        status: "success",
-        metadata,
+    const event = JSON.parse(body) as {
+      event?: string;
+      data?: { reference?: string };
+    };
+    if (event.event === "charge.success" && event.data?.reference) {
+      const url = process.env.NEXT_PUBLIC_CONVEX_URL;
+      if (!url) throw new Error("Convex not configured");
+      await new ConvexHttpClient(url).action(api.paystack.verifyAndFinalize, {
+        reference: event.data.reference,
       });
-
-      console.log(`Paystack webhook: payment ${reference} confirmed, amount ₦${amount}`);
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Paystack webhook error:", error);
+    console.error(
+      "Paystack webhook failed:",
+      error instanceof Error ? error.message : "Unknown error"
+    );
     return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
   }
 }

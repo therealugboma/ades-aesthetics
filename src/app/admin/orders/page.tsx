@@ -3,9 +3,11 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { useState } from "react";
+import { useAdminAuth } from "@/lib/admin-auth-context";
 
 export default function AdminOrdersPage() {
-  const orders = useQuery(api.orders.list, {});
+  const { sessionToken } = useAdminAuth();
+  const orders = useQuery(api.orders.list, sessionToken ? { sessionToken } : "skip");
   const updateStatus = useMutation(api.orders.updateStatus);
   const [filter, setFilter] = useState("all");
 
@@ -75,7 +77,11 @@ export default function AdminOrdersPage() {
                     <select
                       value={o.status}
                       onChange={async (e) => {
-                        await updateStatus({ orderId: o._id, status: e.target.value as any });
+                        await updateStatus({
+                          sessionToken: sessionToken!,
+                          orderId: o._id,
+                          status: e.target.value as any,
+                        });
                       }}
                       className="rounded border border-gray-300 px-2 py-1 text-xs"
                     >

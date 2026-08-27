@@ -19,26 +19,26 @@ export const send = mutation({
 });
 
 export const list = query({
-  args: {},
-  handler: async (ctx) => {
-    await requireAdmin(ctx);
+  args: { sessionToken: v.string() },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.sessionToken);
     return await ctx.db.query("contactMessages").order("desc").collect();
   },
 });
 
 export const markRead = mutation({
-  args: { id: v.id("contactMessages") },
+  args: { sessionToken: v.string(), id: v.id("contactMessages") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     await ctx.db.patch(args.id, { isRead: true });
     return args.id;
   },
 });
 
 export const remove = mutation({
-  args: { id: v.id("contactMessages") },
+  args: { sessionToken: v.string(), id: v.id("contactMessages") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     await ctx.db.delete(args.id);
     return args.id;
   },

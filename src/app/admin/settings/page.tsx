@@ -3,8 +3,10 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { useState } from "react";
+import { useAdminAuth } from "@/lib/admin-auth-context";
 
 export default function AdminSettingsPage() {
+  const { sessionToken } = useAdminAuth();
   const settings = useQuery(api.settings.get);
   const updateSetting = useMutation(api.settings.update);
   const [form, setForm] = useState<Record<string, string>>({});
@@ -20,7 +22,7 @@ export default function AdminSettingsPage() {
     setSaving(true);
     try {
       for (const [key, value] of Object.entries(form)) {
-        await updateSetting({ key, value });
+        await updateSetting({ sessionToken: sessionToken!, key, value });
       }
       setSaved(true);
     } catch (err: any) {

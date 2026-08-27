@@ -48,6 +48,7 @@ export default defineSchema({
     depositAmount: v.number(),
     totalAmount: v.number(),
     notes: v.optional(v.string()),
+    expiresAt: v.optional(v.number()),
     createdAt: v.number(),
   }).index("by_date", ["date"])
     .index("by_customer", ["customerId"])

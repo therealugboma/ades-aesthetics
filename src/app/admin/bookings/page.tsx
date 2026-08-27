@@ -3,9 +3,14 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { useState } from "react";
+import { useAdminAuth } from "@/lib/admin-auth-context";
 
 export default function AdminBookingsPage() {
-  const appointments = useQuery(api.appointments.list, {});
+  const { sessionToken } = useAdminAuth();
+  const appointments = useQuery(
+    api.appointments.list,
+    sessionToken ? { sessionToken } : "skip"
+  );
   const updateStatus = useMutation(api.appointments.updateStatus);
   const [filter, setFilter] = useState<string>("all");
 
@@ -71,7 +76,11 @@ export default function AdminBookingsPage() {
                     <select
                       value={a.status}
                       onChange={async (e) => {
-                        await updateStatus({ id: a._id, status: e.target.value as any });
+                        await updateStatus({
+                          sessionToken: sessionToken!,
+                          id: a._id,
+                          status: e.target.value as any,
+                        });
                       }}
                       className="rounded border border-gray-300 px-2 py-1 text-xs"
                     >

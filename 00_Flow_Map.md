@@ -7,10 +7,10 @@ Premium beauty business platform enabling appointment booking, product shopping,
 | ID | Flow | Primary actor | Goal | Trigger | Success outcome | Entry flows | Exit flows | Depends on | Proof |
 |---|---|---|---|---|---|---|---|---|---|
 | F1 | Browse & Discover | Customer | Explore services, gallery, products | Site visit | View business offerings | none | F2, F3, F6 | shared-foundation | Page renders with data |
-| F2 | Book Appointment | Customer | Reserve time slot and pay deposit | "Book Now" click | Booking confirmed with payment | F1 | F4 | shared-foundation, services | Booking created in DB |
+| F2 | Book Appointment | Customer | Reserve time slot and pay deposit | "Book Now" click | Booking confirmed with payment | F1 | F4 | shared-foundation, services | Atomic 15-minute hold uses live availability and server price |
 | F3 | Shop & Purchase | Customer | Buy beauty products online | "Add to Cart" | Order placed with payment | F1 | F4 | shared-foundation, products | Order created in DB |
-| F4 | Payment Processing | System | Process Paystack payments | Checkout submission | Payment recorded, status updated | F2, F3 | none | shared-foundation | Payment in DB |
-| F5 | Admin Auth | Admin | Access dashboard securely | Login | Dashboard accessible | none | F6-F10 | shared-foundation | Auth check passes |
+| F4 | Payment Processing | System | Process Paystack payments | Checkout submission | Payment recorded, status updated | F2, F3 | none | shared-foundation | Reference, amount, and currency verified before finalization |
+| F5 | Admin Auth | Admin | Access dashboard securely | Login | Dashboard accessible | none | F6-F10 | shared-foundation | Live, expiring admin session required by every management operation |
 | F6 | Manage Services | Admin | CRUD services | Dashboard nav | Service updated | F5 | none | shared-foundation | Service in DB |
 | F7 | Manage Bookings | Admin | View/update appointments | Dashboard nav | Booking status updated | F5 | none | shared-foundation | Status in DB |
 | F8 | Manage Shop | Admin | CRUD products, manage orders | Dashboard nav | Product/order updated | F5 | none | shared-foundation | Product in DB |

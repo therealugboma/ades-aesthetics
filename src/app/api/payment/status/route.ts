@@ -1,72 +1,69 @@
+import { ConvexHttpClient } from "convex/browser";
 import { NextRequest, NextResponse } from "next/server";
+import { api } from "convex/_generated/api";
 
-async function convexQuery(path: string, args: Record<string, unknown>) {
-  const url = process.env.NEXT_PUBLIC_CONVEX_URL;
-  if (!url) throw new Error("Convex not configured");
-  const res = await fetch(`${url}/api/query`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path, args }),
-  });
-  const data = await res.json();
-  if (data.status !== "success") return null;
-  return data.value;
+function parseMetadata(value?: string) {
+  if (!value) return {};
+  try {
+    return JSON.parse(value) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
 }
 
 export async function GET(request: NextRequest) {
-  const ref = request.nextUrl.searchParams.get("ref");
-  if (!ref) {
+  const reference = request.nextUrl.searchParams.get("ref");
+  if (!reference) {
     return NextResponse.json({ error: "Missing reference" }, { status: 400 });
   }
 
   try {
-    const payment = await convexQuery("payments:getByReferenceWithOrder", { reference: ref });
+    const url = process.env.NEXT_PUBLIC_CONVEX_URL;
+    if (!url) throw new Error("Convex not configured");
+    const convex = new ConvexHttpClient(url);
+
+    let payment = await convex.query(api.payments.getByReferenceWithOrder, {
+      reference,
+    });
     if (!payment) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
 
-    // If still pending, try verifying with Paystack
-    if (payment.status === "pending") {
-      const secretKey = process.env.PAYSTACK_SECRET_KEY;
-      if (secretKey) {
-        const verifyRes = await fetch(
-          `https://api.paystack.co/transaction/verify/${encodeURIComponent(ref)}`,
-          { headers: { Authorization: `Bearer ${secretKey}` } }
+    if (payment.status === "pending" || payment.status === "abandoned") {
+      try {
+        await convex.action(api.paystack.verifyAndFinalize, { reference });
+        payment = await convex.query(api.payments.getByReferenceWithOrder, {
+          reference,
+        });
+      } catch (error) {
+        console.warn(
+          "Payment is not verified yet:",
+          error instanceof Error ? error.message : "Unknown verification error"
         );
-        const verifyData = await verifyRes.json();
-        if (verifyData.status && verifyData.data.status === "success") {
-          // Update payment status
-          const url = process.env.NEXT_PUBLIC_CONVEX_URL;
-          await fetch(`${url}/api/mutation`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              path: "payments:updateByReference",
-              args: {
-                reference: ref,
-                status: "success",
-                metadata: JSON.stringify(verifyData.data.metadata || {}),
-              },
-            }),
-          });
-          payment.status = "success";
-          payment.metadata = JSON.stringify(verifyData.data.metadata || {});
-        }
       }
     }
 
-    const metadata = payment.metadata ? JSON.parse(payment.metadata) : {};
+    if (!payment) {
+      return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+    }
+
     return NextResponse.json({
       payment: {
         reference: payment.reference,
         amount: payment.amount,
         status: payment.status,
         orderItems: payment.orderItems,
-        metadata,
+        metadata: parseMetadata(payment.metadata),
       },
     });
   } catch (error) {
-    console.error("Payment status error:", error);
-    return NextResponse.json({ error: "Failed to check payment status" }, { status: 500 });
+    console.error(
+      "Payment status failed:",
+      error instanceof Error ? error.message : "Unknown error"
+    );
+    return NextResponse.json(
+      { error: "Failed to check payment status" },
+      { status: 500 }
+    );
   }
 }

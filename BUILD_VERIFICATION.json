@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "persistent_data": true,
+  "commands": [
+    {
+      "name": "tests",
+      "argv": ["npm", "test"],
+      "definition_file": "package.json"
+    },
+    {
+      "name": "build",
+      "argv": ["npm", "run", "build:verify"],
+      "definition_file": "package.json"
+    },
+    {
+      "name": "runtime-proof",
+      "argv": ["npm", "run", "verify:runtime"],
+      "definition_file": "package.json"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "evidence/flows/F2_Booking/runtime-proof.json",
+      "produced_by": "runtime-proof",
+      "kind": "runtime",
+      "max_age_hours": 24
+    },
+    {
+      "path": "evidence/flows/F2_Booking/migration-state.json",
+      "produced_by": "runtime-proof",
+      "kind": "runtime",
+      "max_age_hours": 24
+    }
+  ]
+}

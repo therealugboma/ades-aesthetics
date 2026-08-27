@@ -14,15 +14,13 @@ function BookingSuccessContent() {
     status: string;
     customerName: string;
     totalAmount: number;
-    appointmentId: string;
+    depositPercentage: number;
   } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(ref));
+  const [verificationError, setVerificationError] = useState("");
 
   useEffect(() => {
-    if (!ref) {
-      setLoading(false);
-      return;
-    }
+    if (!ref) return;
 
     const timer = setTimeout(async () => {
       try {
@@ -35,11 +33,17 @@ function BookingSuccessContent() {
             status: data.payment.status,
             customerName: data.payment.metadata?.customerName || "Customer",
             totalAmount: data.payment.metadata?.totalAmount || 0,
-            appointmentId: data.payment.metadata?.appointmentId || "",
+            depositPercentage: data.payment.metadata?.depositPercentage || 30,
           });
+        } else {
+          setVerificationError(
+            data.error || "We could not find this payment reference."
+          );
         }
       } catch {
-        // Payment might still be processing
+        setVerificationError(
+          "We could not verify the payment yet. Your bank may still be processing it."
+        );
       } finally {
         setLoading(false);
       }
@@ -48,13 +52,17 @@ function BookingSuccessContent() {
     return () => clearTimeout(timer);
   }, [ref]);
 
+  const isConfirmed = booking?.status === "success";
+
   return (
     <main className="flex-1 bg-gray-50">
       <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
         <div className="text-center">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
+          <div className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full ${
+            isConfirmed ? "bg-green-100" : "bg-amber-100"
+          }`}>
             <svg
-              className="h-10 w-10 text-green-600"
+              className={`h-10 w-10 ${isConfirmed ? "text-green-600" : "text-amber-600"}`}
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={2}
@@ -68,12 +76,19 @@ function BookingSuccessContent() {
             </svg>
           </div>
           <h1 className="mt-8 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            Booking Confirmed!
+            {loading
+              ? "Verifying Your Payment…"
+              : isConfirmed
+                ? "Booking Confirmed!"
+                : "Payment Verification Pending"}
           </h1>
           <p className="mt-4 text-lg text-gray-600">
-            Thank you for choosing Ades Aesthetics. Your deposit of{" "}
-            {booking && !loading ? formatPrice(booking.amount) : ""} has been
-            received and your appointment is confirmed.
+            {isConfirmed
+              ? `Thank you for choosing Ades Aesthetics. Your deposit of ${formatPrice(booking.amount)} has been received and your appointment is confirmed.`
+              : loading
+                ? "Please wait while we confirm your payment securely with Paystack."
+                : verificationError ||
+                  "Your payment has not been confirmed yet. Please refresh in a moment or contact us with your reference."}
           </p>
         </div>
 
@@ -97,7 +112,9 @@ function BookingSuccessContent() {
                   </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-sm text-gray-500">Deposit Paid (30%)</dt>
+                  <dt className="text-sm text-gray-500">
+                    Deposit ({booking.depositPercentage}%)
+                  </dt>
                   <dd className="text-sm font-bold text-rose-600">
                     {formatPrice(booking.amount)}
                   </dd>
@@ -110,7 +127,9 @@ function BookingSuccessContent() {
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">Status</dt>
-                  <dd className="text-sm font-medium capitalize text-green-600">
+                  <dd className={`text-sm font-medium capitalize ${
+                    isConfirmed ? "text-green-600" : "text-amber-600"
+                  }`}>
                     {booking.status}
                   </dd>
                 </div>
@@ -124,6 +143,7 @@ function BookingSuccessContent() {
           </dl>
         </div>
 
+        {isConfirmed ? (
         <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-6">
           <h3 className="text-base font-semibold text-amber-900">
             What&apos;s Next
@@ -149,6 +169,21 @@ function BookingSuccessContent() {
             </li>
           </ul>
         </div>
+        ) : !loading ? (
+          <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
+            <p className="font-semibold">Do not make another payment yet.</p>
+            <p className="mt-2">
+              Refresh the status first. If it is still pending, contact us with reference {ref || "—"} so we can confirm it safely.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-4 rounded-full bg-amber-700 px-5 py-2 font-semibold text-white hover:bg-amber-800"
+            >
+              Refresh Payment Status
+            </button>
+          </div>
+        ) : null}
 
         <div className="mt-10 text-center">
           <Link

@@ -27,6 +27,7 @@ export const getOrCreate = mutation({
 
 export const list = query({
   args: {
+    sessionToken: v.string(),
     paginationOpts: v.optional(
       v.object({
         numItems: v.number(),
@@ -35,7 +36,7 @@ export const list = query({
     ),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     const limit = args.paginationOpts?.numItems ?? 50;
     let q = ctx.db.query("customers").order("desc");
     if (args.paginationOpts?.cursor) {
@@ -55,9 +56,9 @@ export const list = query({
 });
 
 export const getById = query({
-  args: { id: v.id("customers") },
+  args: { sessionToken: v.string(), id: v.id("customers") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     const customer = await ctx.db.get(args.id);
     if (!customer) throw new Error("Customer not found");
     const appointments = await ctx.db

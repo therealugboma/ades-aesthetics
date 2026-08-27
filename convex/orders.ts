@@ -76,6 +76,7 @@ export const create = mutation({
 
 export const list = query({
   args: {
+    sessionToken: v.string(),
     status: v.optional(
       v.union(
         v.literal("pending"),
@@ -88,7 +89,7 @@ export const list = query({
     ),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     if (args.status) {
       return await ctx.db
         .query("orders")
@@ -101,9 +102,9 @@ export const list = query({
 });
 
 export const getById = query({
-  args: { orderId: v.id("orders") },
+  args: { sessionToken: v.string(), orderId: v.id("orders") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     const order = await ctx.db.get(args.orderId);
     if (!order) return null;
     const items = await ctx.db
@@ -117,6 +118,7 @@ export const getById = query({
 
 export const updateStatus = mutation({
   args: {
+    sessionToken: v.string(),
     orderId: v.id("orders"),
     status: v.union(
       v.literal("pending"),
@@ -128,7 +130,7 @@ export const updateStatus = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     await ctx.db.patch(args.orderId, { status: args.status });
     return args.orderId;
   },

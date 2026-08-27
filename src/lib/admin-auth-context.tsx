@@ -10,11 +10,13 @@ interface AdminUser {
 
 interface AdminAuthContextType {
   user: AdminUser | null;
+  sessionToken: string | null;
   loading: boolean;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType>({
   user: null,
+  sessionToken: null,
   loading: true,
 });
 
@@ -24,6 +26,7 @@ export function useAdminAuth() {
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,13 +35,19 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         if (!res.ok) throw new Error();
         return res.json();
       })
-      .then((data) => setUser(data.user))
-      .catch(() => setUser(null))
+      .then((data) => {
+        setUser(data.user);
+        setSessionToken(data.sessionToken);
+      })
+      .catch(() => {
+        setUser(null);
+        setSessionToken(null);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   return (
-    <AdminAuthContext.Provider value={{ user, loading }}>
+    <AdminAuthContext.Provider value={{ user, sessionToken, loading }}>
       {children}
     </AdminAuthContext.Provider>
   );

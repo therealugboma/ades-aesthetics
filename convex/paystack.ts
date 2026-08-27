@@ -1,62 +1,55 @@
 import { action } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
-export const initializeTransaction = action({
-  args: {
-    email: v.string(),
-    amount: v.number(),
-    reference: v.string(),
-    metadata: v.optional(v.string()),
-  },
-  handler: async (_ctx, args) => {
-    const secretKey = process.env.PAYSTACK_SECRET_KEY;
-    if (!secretKey) throw new Error("PAYSTACK_SECRET_KEY not configured");
+type PaystackVerification = {
+  status: boolean;
+  message?: string;
+  data?: {
+    status: string;
+    amount: number;
+    currency: string;
+    metadata?: Record<string, unknown>;
+  };
+};
 
-    const response = await fetch(
-      "https://api.paystack.co/transaction/initialize",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${secretKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: args.email,
-          amount: Math.round(args.amount * 100),
-          reference: args.reference,
-          metadata: args.metadata ? JSON.parse(args.metadata) : undefined,
-        }),
-      }
-    );
+async function fetchVerifiedTransaction(reference: string) {
+  const secretKey = process.env.PAYSTACK_SECRET_KEY;
+  if (!secretKey) throw new Error("PAYSTACK_SECRET_KEY not configured");
 
-    const data = await response.json();
-    if (!data.status) {
-      throw new Error(data.message || "Failed to initialize transaction");
+  const response = await fetch(
+    `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
+    {
+      method: "GET",
+      headers: { Authorization: `Bearer ${secretKey}` },
     }
-    return data.data;
-  },
-});
+  );
+  const result = (await response.json()) as PaystackVerification;
+  if (!response.ok || !result.status || !result.data) {
+    throw new Error(result.message || "Failed to verify transaction");
+  }
+  return result.data;
+}
 
-export const verifyTransaction = action({
+export const verifyAndFinalize = action({
   args: { reference: v.string() },
-  handler: async (_ctx, args) => {
-    const secretKey = process.env.PAYSTACK_SECRET_KEY;
-    if (!secretKey) throw new Error("PAYSTACK_SECRET_KEY not configured");
-
-    const response = await fetch(
-      `https://api.paystack.co/transaction/verify/${args.reference}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${secretKey}`,
-        },
-      }
-    );
-
-    const data = await response.json();
-    if (!data.status) {
-      throw new Error(data.message || "Failed to verify transaction");
+  handler: async (ctx, args) => {
+    const transaction = await fetchVerifiedTransaction(args.reference);
+    if (transaction.status !== "success") {
+      return { status: transaction.status };
     }
-    return data.data;
+
+    const metadata = transaction.metadata;
+    await ctx.runMutation(internal.payments.finalizeVerified, {
+      reference: args.reference,
+      amountKobo: transaction.amount,
+      currency: transaction.currency,
+      metadata:
+        metadata && Object.keys(metadata).length > 0
+          ? JSON.stringify(metadata)
+          : undefined,
+    });
+
+    return { status: "success" };
   },
 });

@@ -1,9 +1,107 @@
-import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { query, mutation, type MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import { ConvexError, v } from "convex/values";
 import { requireAdmin } from "./helpers";
+import {
+  APPOINTMENT_BUFFER_MINUTES,
+  RESERVATION_TTL_MS,
+  appointmentBlocksAvailability,
+  bookingDateTimeMs,
+  intervalsOverlapWithBuffer,
+  isValidBookingDate,
+  timeToMinutes,
+} from "./lib/booking";
+
+type BookingErrorCode =
+  | "INVALID_BOOKING"
+  | "SERVICE_UNAVAILABLE"
+  | "SLOT_UNAVAILABLE";
+
+function bookingError(code: BookingErrorCode, message: string): never {
+  throw new ConvexError({ code, message });
+}
+
+async function validateSlot(
+  ctx: MutationCtx,
+  args: { serviceId: Id<"services">; date: string; time: string },
+  now: number
+) {
+  const service = await ctx.db.get(args.serviceId);
+  if (!service || !service.isActive) {
+    bookingError("SERVICE_UNAVAILABLE", "This service is no longer available.");
+  }
+
+  const requestedStart = timeToMinutes(args.time);
+  const requestedEnd = requestedStart + service.duration;
+  if (
+    !isValidBookingDate(args.date) ||
+    !Number.isFinite(requestedStart) ||
+    requestedStart % 30 !== 0 ||
+    requestedStart < 9 * 60 ||
+    requestedEnd > 19 * 60 ||
+    bookingDateTimeMs(args.date, args.time) <= now
+  ) {
+    bookingError(
+      "INVALID_BOOKING",
+      "Please choose a valid future appointment time during business hours."
+    );
+  }
+
+  const existingAppointments = await ctx.db
+    .query("appointments")
+    .withIndex("by_date", (q) => q.eq("date", args.date))
+    .collect();
+
+  for (const appointment of existingAppointments) {
+    if (!appointmentBlocksAvailability(appointment, now)) continue;
+    const appointmentService = await ctx.db.get(appointment.serviceId);
+    if (!appointmentService) continue;
+
+    const appointmentStart = timeToMinutes(appointment.time);
+    const appointmentEnd = appointmentStart + appointmentService.duration;
+    if (
+      intervalsOverlapWithBuffer(
+        requestedStart,
+        requestedEnd,
+        appointmentStart,
+        appointmentEnd
+      )
+    ) {
+      bookingError(
+        "SLOT_UNAVAILABLE",
+        "That time was just booked. Please choose another available time."
+      );
+    }
+  }
+
+  const blockedTimes = await ctx.db
+    .query("blockedTimes")
+    .withIndex("by_date", (q) => q.eq("date", args.date))
+    .collect();
+
+  for (const blocked of blockedTimes) {
+    if (
+      intervalsOverlapWithBuffer(
+        requestedStart,
+        requestedEnd,
+        timeToMinutes(blocked.startTime),
+        timeToMinutes(blocked.endTime),
+        APPOINTMENT_BUFFER_MINUTES
+      )
+    ) {
+      bookingError(
+        "SLOT_UNAVAILABLE",
+        "That time is unavailable. Please choose another available time."
+      );
+    }
+  }
+
+  return service;
+}
 
 export const create = mutation({
   args: {
+    sessionToken: v.string(),
     customerId: v.id("customers"),
     serviceId: v.id("services"),
     date: v.string(),
@@ -11,46 +109,15 @@ export const create = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const service = await ctx.db.get(args.serviceId);
-    if (!service || !service.isActive) {
-      throw new Error("Service not found or inactive");
-    }
-
-    const existingAppointments = await ctx.db
-      .query("appointments")
-      .withIndex("by_date", (q) => q.eq("date", args.date))
-      .collect();
-
-    const requestedStart = timeToMinutes(args.time);
-    const requestedEnd = requestedStart + service.duration;
-
-    for (const apt of existingAppointments) {
-      if (apt.status === "cancelled") continue;
-      const aptService = await ctx.db.get(apt.serviceId);
-      if (!aptService) continue;
-      const aptStart = timeToMinutes(apt.time);
-      const aptEnd = aptStart + aptService.duration;
-      const buffer = 30;
-      if (requestedStart < aptEnd + buffer && requestedEnd > aptStart - buffer) {
-        throw new Error("This time slot is not available. Please try a different time or date. TEST123");
-      }
-    }
-
-    const blockedTimes = await ctx.db
-      .query("blockedTimes")
-      .withIndex("by_date", (q) => q.eq("date", args.date))
-      .collect();
-
-    for (const blocked of blockedTimes) {
-      const blockedStart = timeToMinutes(blocked.startTime);
-      const blockedEnd = timeToMinutes(blocked.endTime);
-      if (requestedStart < blockedEnd && requestedEnd > blockedStart) {
-        throw new Error("This time slot is blocked. Please try a different time or date.");
-      }
-    }
+    await requireAdmin(ctx, args.sessionToken);
+    const now = Date.now();
+    const service = await validateSlot(ctx, args, now);
 
     const depositPercentage = await getSetting(ctx, "deposit_percentage");
-    const depositAmount = service.price * (parseFloat(depositPercentage) / 100);
+    const depositAmount = Math.max(
+      Math.round(service.price * (parseFloat(depositPercentage) / 100)),
+      1
+    );
 
     return await ctx.db.insert("appointments", {
       customerId: args.customerId,
@@ -61,13 +128,120 @@ export const create = mutation({
       depositAmount,
       totalAmount: service.price,
       notes: args.notes,
-      createdAt: Date.now(),
+      expiresAt: now + RESERVATION_TTL_MS,
+      createdAt: now,
     });
+  },
+});
+
+export const createCheckout = mutation({
+  args: {
+    serviceId: v.id("services"),
+    date: v.string(),
+    time: v.string(),
+    name: v.string(),
+    email: v.string(),
+    phone: v.string(),
+    notes: v.optional(v.string()),
+    reference: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const name = args.name.trim();
+    const email = args.email.trim().toLowerCase();
+    const phone = args.phone.trim();
+    if (!name || !email || !phone || !/^\S+@\S+\.\S+$/.test(email)) {
+      bookingError(
+        "INVALID_BOOKING",
+        "Please enter a valid name, email address, and phone number."
+      );
+    }
+
+    const existingPayment = await ctx.db
+      .query("payments")
+      .withIndex("by_reference", (q) => q.eq("reference", args.reference))
+      .first();
+    if (existingPayment) {
+      bookingError("INVALID_BOOKING", "Please refresh and try your booking again.");
+    }
+
+    const service = await validateSlot(ctx, args, now);
+    const depositSetting = Number(await getSetting(ctx, "deposit_percentage"));
+    if (!Number.isFinite(depositSetting) || depositSetting <= 0 || depositSetting > 100) {
+      throw new Error("Invalid deposit_percentage business setting");
+    }
+
+    const depositAmount = Math.max(
+      Math.round(service.price * (depositSetting / 100)),
+      1
+    );
+
+    const existingCustomer = await ctx.db
+      .query("customers")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .first();
+
+    let customerId;
+    if (existingCustomer) {
+      customerId = existingCustomer._id;
+      await ctx.db.patch(customerId, { name, phone });
+    } else {
+      customerId = await ctx.db.insert("customers", {
+        name,
+        email,
+        phone,
+        createdAt: now,
+      });
+    }
+
+    const expiresAt = now + RESERVATION_TTL_MS;
+    const appointmentId = await ctx.db.insert("appointments", {
+      customerId,
+      serviceId: args.serviceId,
+      date: args.date,
+      time: args.time,
+      status: "pending",
+      depositAmount,
+      totalAmount: service.price,
+      notes: args.notes?.trim() || undefined,
+      expiresAt,
+      createdAt: now,
+    });
+
+    await ctx.db.insert("payments", {
+      reference: args.reference,
+      appointmentId,
+      amount: depositAmount,
+      currency: "NGN",
+      status: "pending",
+      metadata: JSON.stringify({
+        customerName: name,
+        customerEmail: email,
+        customerPhone: phone,
+        appointmentId,
+        totalAmount: service.price,
+        depositAmount,
+        depositPercentage: depositSetting,
+        serviceName: service.name,
+        date: args.date,
+        time: args.time,
+      }),
+      createdAt: now,
+    });
+
+    return {
+      appointmentId,
+      amount: depositAmount,
+      totalAmount: service.price,
+      depositPercentage: depositSetting,
+      expiresAt,
+    };
   },
 });
 
 export const list = query({
   args: {
+    sessionToken: v.string(),
     startDate: v.optional(v.string()),
     endDate: v.optional(v.string()),
     status: v.optional(
@@ -81,7 +255,7 @@ export const list = query({
     ),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     let appointments;
     if (args.status) {
       appointments = await ctx.db
@@ -114,6 +288,7 @@ export const list = query({
 
 export const updateStatus = mutation({
   args: {
+    sessionToken: v.string(),
     id: v.id("appointments"),
     status: v.union(
       v.literal("pending"),
@@ -124,15 +299,16 @@ export const updateStatus = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.sessionToken);
     await ctx.db.patch(args.id, { status: args.status });
     return args.id;
   },
 });
 
 export const getByDate = query({
-  args: { date: v.string() },
+  args: { sessionToken: v.string(), date: v.string() },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.sessionToken);
     const appointments = await ctx.db
       .query("appointments")
       .withIndex("by_date", (q) => q.eq("date", args.date))
@@ -148,15 +324,10 @@ export const getByDate = query({
   },
 });
 
-function timeToMinutes(time: string): number {
-  const [hours, minutes] = time.split(":").map(Number);
-  return hours * 60 + minutes;
-}
-
-async function getSetting(ctx: any, key: string): Promise<string> {
+async function getSetting(ctx: MutationCtx, key: string): Promise<string> {
   const results = await ctx.db
     .query("businessSettings")
-    .withIndex("by_key", (q: any) => q.eq("key", key))
+    .withIndex("by_key", (q) => q.eq("key", key))
     .collect();
   if (results.length === 0) throw new Error(`Setting "${key}" not found`);
   return results[0].value;

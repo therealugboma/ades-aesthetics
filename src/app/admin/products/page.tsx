@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "convex/_generated/api";
 import { useState, useRef } from "react";
+import { useAdminAuth } from "@/lib/admin-auth-context";
 
 interface ProductForm {
   name: string;
@@ -19,8 +20,15 @@ const emptyForm: ProductForm = {
 };
 
 export default function AdminProductsPage() {
-  const products = useQuery(api.products.listAll);
-  const categories = useQuery(api.products.listCategories);
+  const { sessionToken } = useAdminAuth();
+  const products = useQuery(
+    api.products.listAll,
+    sessionToken ? { sessionToken } : "skip"
+  );
+  const categories = useQuery(
+    api.products.listCategories,
+    sessionToken ? { sessionToken } : "skip"
+  );
   const createProduct = useMutation(api.products.create);
   const updateProduct = useMutation(api.products.update);
   const deleteProduct = useMutation(api.products.remove);
@@ -86,18 +94,22 @@ export default function AdminProductsPage() {
       let imageUrl = editing?.imageUrl || "";
 
       if (file) {
-        const uploadUrl = await generateUploadUrl();
+        const uploadUrl = await generateUploadUrl({ sessionToken: sessionToken! });
         const result = await fetch(uploadUrl, {
           method: "POST",
           headers: { "Content-Type": file.type },
           body: file,
         });
         const { storageId } = await result.json();
-        imageUrl = await getStorageUrl({ storageId: storageId as string });
+        imageUrl = await getStorageUrl({
+          sessionToken: sessionToken!,
+          storageId: storageId as string,
+        });
       }
 
       if (editing) {
         await updateProduct({
+          sessionToken: sessionToken!,
           id: editing._id,
           name: form.name,
           slug: form.slug || slugify(form.name),
@@ -110,6 +122,7 @@ export default function AdminProductsPage() {
         });
       } else {
         await createProduct({
+          sessionToken: sessionToken!,
           name: form.name,
           slug: form.slug || slugify(form.name),
           description: form.description,
@@ -134,11 +147,11 @@ export default function AdminProductsPage() {
 
   const handleDelete = async (p: any) => {
     if (!confirm(`Deactivate "${p.name}"?`)) return;
-    await deleteProduct({ id: p._id });
+    await deleteProduct({ sessionToken: sessionToken!, id: p._id });
   };
 
   const handleToggleActive = async (p: any) => {
-    await updateProduct({ id: p._id, isActive: !p.isActive });
+    await updateProduct({ sessionToken: sessionToken!, id: p._id, isActive: !p.isActive });
   };
 
   return (

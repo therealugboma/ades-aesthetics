@@ -2,9 +2,11 @@
 
 import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
+import { useAdminAuth } from "@/lib/admin-auth-context";
 
 export default function AdminPaymentsPage() {
-  const payments = useQuery(api.payments.list, {});
+  const { sessionToken } = useAdminAuth();
+  const payments = useQuery(api.payments.list, sessionToken ? { sessionToken } : "skip");
 
   return (
     <div>

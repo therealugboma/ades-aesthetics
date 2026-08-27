@@ -2,9 +2,14 @@
 
 import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
+import { useAdminAuth } from "@/lib/admin-auth-context";
 
 export default function AdminCustomersPage() {
-  const result = useQuery(api.customers.list, {});
+  const { sessionToken } = useAdminAuth();
+  const result = useQuery(
+    api.customers.list,
+    sessionToken ? { sessionToken } : "skip"
+  );
   const customers = result?.customers ?? [];
 
   return (

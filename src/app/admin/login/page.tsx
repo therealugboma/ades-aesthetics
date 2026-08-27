@@ -68,7 +68,7 @@ export default function AdminLoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 focus:outline-none"
-                placeholder="admin@adesaesthetics.com"
+                placeholder="you@example.com"
               />
             </div>
 
@@ -97,7 +97,7 @@ export default function AdminLoginPage() {
         </div>
 
         <p className="mt-6 text-center text-xs text-gray-400">
-          Default: admin@adesaesthetics.com / admin123
+          Use the administrator credentials configured during setup.
         </p>
       </div>
     </div>

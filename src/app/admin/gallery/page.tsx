@@ -3,8 +3,10 @@
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "convex/_generated/api";
 import { useState, useRef } from "react";
+import { useAdminAuth } from "@/lib/admin-auth-context";
 
 export default function AdminGalleryPage() {
+  const { sessionToken } = useAdminAuth();
   const images = useQuery(api.gallery.list, {});
   const createImage = useMutation(api.gallery.create);
   const removeImage = useMutation(api.gallery.remove);
@@ -31,16 +33,20 @@ export default function AdminGalleryPage() {
     if (!file) return;
     setSaving(true);
     try {
-      const uploadUrl = await generateUploadUrl();
+      const uploadUrl = await generateUploadUrl({ sessionToken: sessionToken! });
       const result = await fetch(uploadUrl, {
         method: "POST",
         headers: { "Content-Type": file.type },
         body: file,
       });
       const { storageId } = await result.json();
-      const url = await getStorageUrl({ storageId: storageId as string });
+      const url = await getStorageUrl({
+        sessionToken: sessionToken!,
+        storageId: storageId as string,
+      });
 
       await createImage({
+        sessionToken: sessionToken!,
         url,
         alt: form.alt,
         category: form.category as any,
@@ -142,7 +148,9 @@ export default function AdminGalleryPage() {
               <div className="flex items-center justify-between mt-2">
                 <span className="text-xs text-gray-400 capitalize">{img.category}</span>
                 <button onClick={async () => {
-                    if (confirm("Delete this image?")) await removeImage({ id: img._id });
+                    if (confirm("Delete this image?")) {
+                      await removeImage({ sessionToken: sessionToken!, id: img._id });
+                    }
                   }} className="text-red-500 hover:text-red-600 text-xs">Delete</button>
               </div>
             </div>

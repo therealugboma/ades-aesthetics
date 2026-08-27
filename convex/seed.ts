@@ -1,10 +1,21 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-import bcrypt from "bcrypt";
+import { hashPassword } from "./password";
 
 export const seed = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    seedToken: v.string(),
+    adminEmail: v.string(),
+    adminPassword: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const configuredSeedToken = process.env.SEED_TOKEN;
+    if (!configuredSeedToken || args.seedToken !== configuredSeedToken) {
+      throw new Error("Unauthorized seed request");
+    }
+    if (args.adminPassword.length < 12) {
+      throw new Error("Admin password must be at least 12 characters");
+    }
     const existingSettings = await ctx.db.query("businessSettings").collect();
     if (existingSettings.length > 0) {
       return "Already seeded — skipping";
@@ -215,10 +226,10 @@ export const seed = mutation({
     }
 
     await ctx.db.insert("users", {
-      email: "admin@adesaesthetics.com",
+      email: args.adminEmail.trim().toLowerCase(),
       name: "Admin",
       role: "admin",
-      passwordHash: bcrypt.hashSync("admin123", 10),
+      passwordHash: await hashPassword(args.adminPassword),
     });
 
     return "Seeded successfully";

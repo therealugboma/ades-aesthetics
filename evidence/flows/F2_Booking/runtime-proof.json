@@ -1,0 +1,47 @@
+{
+  "generatedAt": "2026-08-27T18:35:05.487Z",
+  "baseUrl": "http://127.0.0.1:3000",
+  "deploymentOrigin": "https://famous-possum-319.eu-west-1.convex.cloud",
+  "result": "pass",
+  "checks": [
+    {
+      "name": "booking page renders",
+      "passed": true,
+      "observedStatus": 200
+    },
+    {
+      "name": "admin data fails closed without a session",
+      "passed": true,
+      "observedStatus": 401
+    },
+    {
+      "name": "admin management APIs reject unauthenticated requests",
+      "passed": true,
+      "observedStatus": 401
+    },
+    {
+      "name": "invalid booking checkout returns a safe validation error",
+      "passed": true,
+      "observedStatus": 400
+    },
+    {
+      "name": "development Convex deployment serves booking data",
+      "passed": true,
+      "observedServiceCount": 7,
+      "observedAvailabilityType": "array"
+    },
+    {
+      "name": "development Convex deployment denies invalid admin sessions",
+      "passed": true
+    }
+  ],
+  "migrationState": {
+    "status": "remote-pass",
+    "schemaSha256": "cb7f27d0126b2d35d806d5c4814117afaf20f36abba2485f2f127a3b667686f3",
+    "evidence": "evidence/flows/F2_Booking/migration-state.json"
+  },
+  "paymentPersistence": {
+    "status": "unverified",
+    "reason": "No real Paystack transaction was performed."
+  }
+}

@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "convex/_generated/api";
 import { useState, useRef } from "react";
+import { useAdminAuth } from "@/lib/admin-auth-context";
 
 const categories = ["nails", "lashes", "brows", "skin", "other"] as const;
 
@@ -20,7 +21,11 @@ const emptyForm: ServiceForm = {
 };
 
 export default function AdminServicesPage() {
-  const services = useQuery(api.services.getAll);
+  const { sessionToken } = useAdminAuth();
+  const services = useQuery(
+    api.services.getAll,
+    sessionToken ? { sessionToken } : "skip"
+  );
   const createService = useMutation(api.services.create);
   const updateService = useMutation(api.services.update);
   const removeService = useMutation(api.services.remove);
@@ -80,18 +85,22 @@ export default function AdminServicesPage() {
       let imageUrl = editing?.imageUrl || "";
 
       if (file) {
-        const uploadUrl = await generateUploadUrl();
+        const uploadUrl = await generateUploadUrl({ sessionToken: sessionToken! });
         const result = await fetch(uploadUrl, {
           method: "POST",
           headers: { "Content-Type": file.type },
           body: file,
         });
         const { storageId } = await result.json();
-        imageUrl = await getStorageUrl({ storageId: storageId as string });
+        imageUrl = await getStorageUrl({
+          sessionToken: sessionToken!,
+          storageId: storageId as string,
+        });
       }
 
       if (editing) {
         await updateService({
+          sessionToken: sessionToken!,
           id: editing._id,
           name: form.name,
           slug: form.slug || slugify(form.name),
@@ -103,6 +112,7 @@ export default function AdminServicesPage() {
         });
       } else {
         await createService({
+          sessionToken: sessionToken!,
           name: form.name,
           slug: form.slug || slugify(form.name),
           description: form.description,
@@ -127,11 +137,11 @@ export default function AdminServicesPage() {
 
   const handleDelete = async (s: any) => {
     if (!confirm(`Deactivate "${s.name}"?`)) return;
-    await removeService({ id: s._id });
+    await removeService({ sessionToken: sessionToken!, id: s._id });
   };
 
   const handleToggleActive = async (s: any) => {
-    await updateService({ id: s._id, isActive: !s.isActive });
+    await updateService({ sessionToken: sessionToken!, id: s._id, isActive: !s.isActive });
   };
 
   return (

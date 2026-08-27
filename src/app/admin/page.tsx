@@ -2,11 +2,19 @@
 
 import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
+import { useAdminAuth } from "@/lib/admin-auth-context";
 
 export default function AdminDashboardPage() {
-  const appointments = useQuery(api.appointments.list, {});
-  const orders = useQuery(api.orders.list, {});
-  const products = useQuery(api.products.listAll, {});
+  const { sessionToken } = useAdminAuth();
+  const appointments = useQuery(
+    api.appointments.list,
+    sessionToken ? { sessionToken } : "skip"
+  );
+  const orders = useQuery(api.orders.list, sessionToken ? { sessionToken } : "skip");
+  const products = useQuery(
+    api.products.listAll,
+    sessionToken ? { sessionToken } : "skip"
+  );
 
   const isLoading = appointments === undefined || orders === undefined || products === undefined;
   const totalBookings = appointments?.length ?? 0;
