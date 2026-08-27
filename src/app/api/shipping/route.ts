@@ -6,6 +6,7 @@ interface ShippingRate {
   name: string;
   code: string;
   fee: number;
+  delivery_cost: number;
   delivery_window: string;
   sla_description: string;
   description: string;
@@ -118,6 +119,7 @@ export async function POST(request: NextRequest) {
         name: r.name,
         code: r.code,
         fee: r.fee,
+        delivery_cost: r.base_fee || r.fee,
         delivery_window: r.delivery_window || r.delivery_eta_string || "",
         sla_description: r.sla_description || "",
         description: r.description || r.name,

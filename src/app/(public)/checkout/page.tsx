@@ -22,6 +22,7 @@ interface ShippingRate {
   name: string;
   code: string;
   fee: number;
+  delivery_cost: number;
   delivery_window: string;
   sla_description: string;
   description: string;
@@ -156,6 +157,8 @@ export default function CheckoutPage() {
           })),
           delivery,
           shippingFee: selectedRate.fee,
+          deliveryCost: selectedRate.delivery_cost,
+          subtotal,
           total,
         }),
       });

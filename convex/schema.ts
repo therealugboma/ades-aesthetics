@@ -110,7 +110,9 @@ export default defineSchema({
       v.literal("cancelled")
     ),
     totalAmount: v.number(),
+    subtotal: v.optional(v.number()),
     deliveryFee: v.optional(v.number()),
+    deliveryCost: v.optional(v.number()),
     deliveryAddress: v.string(),
     deliveryNotes: v.optional(v.string()),
     createdAt: v.number(),

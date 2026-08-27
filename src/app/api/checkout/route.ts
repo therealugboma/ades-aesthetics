@@ -17,7 +17,7 @@ async function convexMutation(path: string, args: Record<string, unknown>) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { items, delivery, shippingFee, total } = await request.json();
+    const { items, delivery, shippingFee, deliveryCost, subtotal, total } = await request.json();
 
     if (!items?.length || !delivery?.email || !total) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
       deliveryAddress: fullAddress,
       deliveryNotes: delivery.notes || undefined,
       deliveryFee: shippingFee,
+      deliveryCost,
     });
 
     // 3. Create pending payment record
@@ -56,7 +57,10 @@ export async function POST(request: NextRequest) {
         customerEmail: delivery.email,
         customerPhone: delivery.phone,
         deliveryAddress: fullAddress,
+        subtotal,
         shippingFee,
+        deliveryCost,
+        total,
       }),
     });
 

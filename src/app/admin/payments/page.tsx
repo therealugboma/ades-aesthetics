@@ -15,16 +15,23 @@ export default function AdminPaymentsPage() {
             <tr>
               <th className="px-4 py-3 text-left font-medium text-gray-500">Reference</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500">Amount</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-500">Breakdown</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500">Type</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500">Status</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {payments?.map((p: any) => (
+            {payments?.map((p: any) => {
+              const meta = p.metadata ? (() => { try { return JSON.parse(p.metadata); } catch { return {}; } })() : {};
+              return (
               <tr key={p._id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 font-mono text-xs text-gray-900">{p.reference}</td>
                 <td className="px-4 py-3 text-gray-700">₦{p.amount?.toLocaleString()}</td>
+                <td className="px-4 py-3 text-xs text-gray-500">
+                  {meta.subtotal ? `Products ₦${Number(meta.subtotal).toLocaleString()}; ` : ""}
+                  {meta.shippingFee ? `Delivery ₦${Number(meta.shippingFee).toLocaleString()}` : "—"}
+                </td>
                 <td className="px-4 py-3 text-gray-500 text-xs">
                   {p.appointmentId ? "Booking" : p.orderId ? "Order" : "—"}
                 </td>
@@ -40,7 +47,8 @@ export default function AdminPaymentsPage() {
                   {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—"}
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

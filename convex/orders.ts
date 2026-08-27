@@ -14,6 +14,7 @@ export const create = mutation({
     deliveryAddress: v.string(),
     deliveryNotes: v.optional(v.string()),
     deliveryFee: v.optional(v.number()),
+    deliveryCost: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     let totalAmount = 0;
@@ -51,8 +52,10 @@ export const create = mutation({
     const orderId = await ctx.db.insert("orders", {
       customerId: args.customerId,
       status: "pending",
-      totalAmount: totalAmount + (args.deliveryFee ?? 0),
+      subtotal: totalAmount,
       deliveryFee: args.deliveryFee,
+      deliveryCost: args.deliveryCost,
+      totalAmount: totalAmount + (args.deliveryFee ?? 0),
       deliveryAddress: args.deliveryAddress,
       deliveryNotes: args.deliveryNotes,
       createdAt: Date.now(),

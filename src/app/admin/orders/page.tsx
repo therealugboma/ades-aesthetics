@@ -36,29 +36,33 @@ export default function AdminOrdersPage() {
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="px-4 py-3 text-left font-medium text-gray-500">Order ID</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-500">Amount</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-500">Products</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-500">Delivery</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-500">Total</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500">Status</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {orders === undefined ? (
-              <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-sm text-gray-500">
-                  Loading orders...
-                </td>
-              </tr>
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-500">
+                    Loading orders...
+                  </td>
+                </tr>
             ) : filtered?.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-sm text-gray-500">
-                  No orders found. Orders will appear here after customers complete checkout.
-                </td>
-              </tr>
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-500">
+                    No orders found. Orders will appear here after customers complete checkout.
+                  </td>
+                </tr>
             ) : (
               filtered?.map((o: any) => (
                 <tr key={o._id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-900 font-mono text-xs">#{o._id.slice(-8)}</td>
-                  <td className="px-4 py-3 text-gray-700">₦{o.totalAmount?.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-gray-700">₦{(o.subtotal ?? (o.totalAmount ?? 0) - (o.deliveryFee ?? 0)).toLocaleString()}</td>
+                  <td className="px-4 py-3 text-gray-700">{o.deliveryFee ? `₦${o.deliveryFee.toLocaleString()}` : "—"}</td>
+                  <td className="px-4 py-3 font-medium text-gray-900">₦{o.totalAmount?.toLocaleString()}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2 py-1 text-xs font-medium ${
                       o.status === "paid" || o.status === "delivered" ? "bg-green-100 text-green-700" :
