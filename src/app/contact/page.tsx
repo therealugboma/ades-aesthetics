@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "convex/_generated/api";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 
@@ -12,6 +14,7 @@ interface ContactForm {
 }
 
 export default function ContactPage() {
+  const sendMessage = useMutation(api.contactMessages.send);
   const [form, setForm] = useState<ContactForm>({
     name: "",
     email: "",
@@ -34,7 +37,19 @@ export default function ContactPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await sendMessage({
+        name: form.name,
+        email: form.email,
+        subject: form.subject,
+        message: form.message,
+      });
+
+      await fetch("/api/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
       setSubmitted(true);
       setForm({ name: "", email: "", subject: "", message: "" });
     } finally {
