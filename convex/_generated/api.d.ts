@@ -23,6 +23,7 @@ import type * as products from "../products.js";
 import type * as seed from "../seed.js";
 import type * as services from "../services.js";
 import type * as settings from "../settings.js";
+import type * as upload from "../upload.js";
 
 import type {
   ApiFromModules,
@@ -46,6 +47,7 @@ declare const fullApi: ApiFromModules<{
   seed: typeof seed;
   services: typeof services;
   settings: typeof settings;
+  upload: typeof upload;
 }>;
 
 /**
