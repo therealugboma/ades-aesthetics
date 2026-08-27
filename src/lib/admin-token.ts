@@ -47,7 +47,11 @@ export function verifyAdminToken(token: string): AdminSessionPayload | null {
       .update(`${header}.${body}`)
       .digest();
     const supplied = Buffer.from(signature, "base64url");
-    if (supplied.length !== expected.length || !crypto.timingSafeEqual(supplied, expected)) {
+    if (
+      base64url(supplied) !== signature ||
+      supplied.length !== expected.length ||
+      !crypto.timingSafeEqual(supplied, expected)
+    ) {
       return null;
     }
 

@@ -18,7 +18,8 @@
 - Public queries only return active, published data
 
 ## Data protection
-- Paystack secret key is server-only in the Next.js and Convex environments
+- Paystack secret key is server-only in the Next.js environment
+- Convex accepts payment finalization only through a separate shared `PAYMENT_FINALIZE_SECRET`
 - No secrets in client-side code
 - Customer PII (email, phone) stored in Convex database
 - Webhook HMAC signature verification for Paystack

@@ -8,6 +8,7 @@ import {
   intervalsOverlapWithBuffer,
   reservationCanFinalize,
 } from "../convex/lib/booking.ts";
+import { serviceSecretIsValid } from "../convex/lib/payment.ts";
 
 test("expired unpaid reservations stop blocking appointment slots", () => {
   const now = Date.UTC(2026, 7, 27, 12);
@@ -95,4 +96,10 @@ test("payment finalization only accepts active reservations or confirmed booking
     reservationCanFinalize({ status: "confirmed", createdAt: now }, now),
     true
   );
+});
+
+test("payment finalization requires the configured server-to-server secret", () => {
+  assert.equal(serviceSecretIsValid("correct-secret", "correct-secret"), true);
+  assert.equal(serviceSecretIsValid("wrong-secret", "correct-secret"), false);
+  assert.equal(serviceSecretIsValid("correct-secret", undefined), false);
 });

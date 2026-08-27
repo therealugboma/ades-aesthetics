@@ -11,11 +11,12 @@ Next.js / Vercel:
 - `NEXT_PUBLIC_CONVEX_URL`: Convex deployment URL
 - `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY`: Paystack public key exposed to the checkout widget
 - `PAYSTACK_SECRET_KEY`: Paystack secret used only by route handlers
+- `PAYMENT_FINALIZE_SECRET`: Random server-to-server secret shared with Convex
 - `ADMIN_JWT_SECRET`: Long random value used to sign the HTTP-only admin cookie; required in production
 
 Convex deployment:
 
-- `PAYSTACK_SECRET_KEY`: Paystack secret used to verify transactions and webhook signatures
+- `PAYMENT_FINALIZE_SECRET`: Same random value used by the Next.js deployment; required to finalize verified payments
 - `SEED_TOKEN`: Long random value required by the seed mutation
 
 ## Database schema

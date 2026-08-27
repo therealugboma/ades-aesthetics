@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "source_revision": "deb2813",
+  "source_revision": "44a6480",
   "working_tree": "dirty",
-  "verified_at": "2026-08-27T18:35:05.487Z",
+  "verified_at": "2026-08-27T22:59:40.000Z",
   "gates": {
     "tests": {
       "status": "passed",
       "command": "npm test",
-      "result": "13 passed, 0 failed"
+      "result": "14 passed, 0 failed"
     },
     "typecheck": {
       "status": "passed",

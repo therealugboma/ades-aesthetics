@@ -2,6 +2,10 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { ConvexHttpClient } from "convex/browser";
 import { NextResponse } from "next/server";
 import { api } from "convex/_generated/api";
+import {
+  getPaymentFinalizeSecret,
+  verifyPaystackTransaction,
+} from "@/lib/paystack-server";
 
 function validSignature(body: string, signature: string, secret: string) {
   const expected = Buffer.from(
@@ -36,8 +40,18 @@ export async function POST(request: Request) {
     if (event.event === "charge.success" && event.data?.reference) {
       const url = process.env.NEXT_PUBLIC_CONVEX_URL;
       if (!url) throw new Error("Convex not configured");
-      await new ConvexHttpClient(url).action(api.paystack.verifyAndFinalize, {
+      const transaction = await verifyPaystackTransaction(event.data.reference);
+      if (transaction.status !== "success") {
+        throw new Error("Paystack transaction is not successful");
+      }
+      await new ConvexHttpClient(url).mutation(api.payments.finalizeVerified, {
+        serviceSecret: getPaymentFinalizeSecret(),
         reference: event.data.reference,
+        amountKobo: transaction.amount,
+        currency: transaction.currency,
+        metadata: transaction.metadata
+          ? JSON.stringify(transaction.metadata)
+          : undefined,
       });
     }
 

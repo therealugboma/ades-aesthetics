@@ -1,6 +1,8 @@
-import { query, mutation, internalMutation } from "./_generated/server";
+import { query, mutation } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
 import { requireAdmin } from "./helpers";
+import { serviceSecretIsValid } from "./lib/payment";
 import {
   PAYMENT_CLOSE_GRACE_MS,
   reservationCanFinalize,
@@ -60,62 +62,90 @@ export const create = mutation({
   },
 });
 
-export const finalizeVerified = internalMutation({
+type VerifiedPayment = {
+  reference: string;
+  amountKobo: number;
+  currency: string;
+  metadata?: string;
+};
+
+async function finalizePayment(ctx: MutationCtx, args: VerifiedPayment) {
+  const existing = await ctx.db
+    .query("payments")
+    .withIndex("by_reference", (q) => q.eq("reference", args.reference))
+    .collect();
+  if (existing.length === 0) {
+    throw new Error("Payment not found");
+  }
+  const payment = existing[0];
+  if (
+    Math.round(payment.amount * 100) !== Math.round(args.amountKobo) ||
+    payment.currency.toUpperCase() !== args.currency.toUpperCase()
+  ) {
+    throw new ConvexError({
+      code: "PAYMENT_AMOUNT_MISMATCH",
+      message: "Paystack returned an amount that does not match this payment.",
+    });
+  }
+
+  if (payment.status === "success") return payment._id;
+
+  const updates: { status: "success"; metadata?: string } = {
+    status: "success",
+  };
+  if (args.metadata !== undefined) {
+    updates.metadata = args.metadata;
+  }
+  if (payment.appointmentId) {
+    const appointment = await ctx.db.get(payment.appointmentId);
+    if (!appointment || !reservationCanFinalize(appointment, Date.now())) {
+      throw new ConvexError({
+        code: "RESERVATION_EXPIRED",
+        message:
+          "This appointment reservation expired before payment confirmation.",
+      });
+    }
+  }
+
+  await ctx.db.patch(payment._id, updates);
+  if (payment.appointmentId) {
+    await ctx.db.patch(payment.appointmentId, {
+      status: "confirmed",
+      expiresAt: undefined,
+    });
+  }
+  if (payment.orderId) {
+    await ctx.db.patch(payment.orderId, { status: "paid" });
+  }
+  return payment._id;
+}
+
+export const finalizeVerified = mutation({
   args: {
+    serviceSecret: v.string(),
     reference: v.string(),
     amountKobo: v.number(),
     currency: v.string(),
     metadata: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const existing = await ctx.db
-      .query("payments")
-      .withIndex("by_reference", (q) => q.eq("reference", args.reference))
-      .collect();
-    if (existing.length === 0) {
-      throw new Error("Payment not found");
-    }
-    const payment = existing[0];
     if (
-      Math.round(payment.amount * 100) !== Math.round(args.amountKobo) ||
-      payment.currency.toUpperCase() !== args.currency.toUpperCase()
+      !serviceSecretIsValid(
+        args.serviceSecret,
+        process.env.PAYMENT_FINALIZE_SECRET
+      )
     ) {
       throw new ConvexError({
-        code: "PAYMENT_AMOUNT_MISMATCH",
-        message: "Paystack returned an amount that does not match this payment.",
+        code: "UNAUTHORIZED",
+        message: "Payment verification is not authorized.",
       });
     }
-
-    if (payment.status === "success") return payment._id;
-
-    const updates: { status: "success"; metadata?: string } = {
-      status: "success",
-    };
-    if (args.metadata !== undefined) {
-      updates.metadata = args.metadata;
-    }
-    if (payment.appointmentId) {
-      const appointment = await ctx.db.get(payment.appointmentId);
-      if (!appointment || !reservationCanFinalize(appointment, Date.now())) {
-        throw new ConvexError({
-          code: "RESERVATION_EXPIRED",
-          message:
-            "This appointment reservation expired before payment confirmation.",
-        });
-      }
-    }
-
-    await ctx.db.patch(payment._id, updates);
-    if (payment.appointmentId) {
-      await ctx.db.patch(payment.appointmentId, {
-        status: "confirmed",
-        expiresAt: undefined,
-      });
-    }
-    if (payment.orderId) {
-      await ctx.db.patch(payment.orderId, { status: "paid" });
-    }
-    return payment._id;
+    return await finalizePayment(ctx, {
+      reference: args.reference,
+      amountKobo: args.amountKobo,
+      currency: args.currency,
+      metadata: args.metadata,
+    });
   },
 });
 

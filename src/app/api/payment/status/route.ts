@@ -1,6 +1,10 @@
 import { ConvexHttpClient } from "convex/browser";
 import { NextRequest, NextResponse } from "next/server";
 import { api } from "convex/_generated/api";
+import {
+  getPaymentFinalizeSecret,
+  verifyPaystackTransaction,
+} from "@/lib/paystack-server";
 
 function parseMetadata(value?: string) {
   if (!value) return {};
@@ -31,7 +35,18 @@ export async function GET(request: NextRequest) {
 
     if (payment.status === "pending" || payment.status === "abandoned") {
       try {
-        await convex.action(api.paystack.verifyAndFinalize, { reference });
+        const transaction = await verifyPaystackTransaction(reference);
+        if (transaction.status === "success") {
+          await convex.mutation(api.payments.finalizeVerified, {
+            serviceSecret: getPaymentFinalizeSecret(),
+            reference,
+            amountKobo: transaction.amount,
+            currency: transaction.currency,
+            metadata: transaction.metadata
+              ? JSON.stringify(transaction.metadata)
+              : undefined,
+          });
+        }
         payment = await convex.query(api.payments.getByReferenceWithOrder, {
           reference,
         });
