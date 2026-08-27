@@ -12,6 +12,7 @@ import type * as admin from "../admin.js";
 import type * as appointments from "../appointments.js";
 import type * as availability from "../availability.js";
 import type * as blockedTimes from "../blockedTimes.js";
+import type * as contactMessages from "../contactMessages.js";
 import type * as customers from "../customers.js";
 import type * as gallery from "../gallery.js";
 import type * as helpers from "../helpers.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   appointments: typeof appointments;
   availability: typeof availability;
   blockedTimes: typeof blockedTimes;
+  contactMessages: typeof contactMessages;
   customers: typeof customers;
   gallery: typeof gallery;
   helpers: typeof helpers;
