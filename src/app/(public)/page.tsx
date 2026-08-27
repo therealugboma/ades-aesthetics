@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { HomeServices, HomeProducts } from "@/components/home/HomeContent";
 
 export const metadata: Metadata = {
   title: "Ades Aesthetics | Premium Beauty Services in Lagos",
@@ -12,36 +13,6 @@ export const metadata: Metadata = {
     type: "website",
   },
 };
-
-const featuredServices = [
-  {
-    name: "Gel Manicure",
-    description:
-      "Long-lasting gel polish with cuticle care and hand massage for flawless nails.",
-    price: 15000,
-    duration: 60,
-    category: "nails",
-    slug: "gel-manicure",
-  },
-  {
-    name: "Classic Lash Extensions",
-    description:
-      "Natural-looking lash extensions that enhance your eyes for weeks.",
-    price: 25000,
-    duration: 90,
-    category: "lashes",
-    slug: "classic-lash-extensions",
-  },
-  {
-    name: "HydraFacial Treatment",
-    description:
-      "Deep cleansing and hydrating facial that leaves your skin glowing.",
-    price: 35000,
-    duration: 75,
-    category: "skin",
-    slug: "hydrafacial-treatment",
-  },
-];
 
 const features = [
   {
@@ -73,33 +44,6 @@ const galleryImages = [
   { src: "/gallery/lashes-2.jpg", alt: "Volume lashes", category: "lashes" },
 ];
 
-const products = [
-  {
-    name: "Cuticle Oil",
-    price: 5500,
-    image: "/products/cuticle-oil.jpg",
-    slug: "cuticle-oil",
-  },
-  {
-    name: "Lash Cleanser",
-    price: 4500,
-    image: "/products/lash-cleanser.jpg",
-    slug: "lash-cleanser",
-  },
-  {
-    name: "Hydrating Serum",
-    price: 8500,
-    image: "/products/hydrating-serum.jpg",
-    slug: "hydrating-serum",
-  },
-  {
-    name: "Brow Pomade",
-    price: 6000,
-    image: "/products/brow-pomade.jpg",
-    slug: "brow-pomade",
-  },
-];
-
 const testimonials = [
   {
     name: "Chidinma O.",
@@ -117,10 +61,6 @@ const testimonials = [
     rating: 5,
   },
 ];
-
-function formatPrice(price: number): string {
-  return `₦${price.toLocaleString()}`;
-}
 
 export default function HomePage() {
   return (
@@ -162,36 +102,7 @@ export default function HomePage() {
                 Discover our most popular treatments crafted just for you.
               </p>
             </div>
-            <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {featuredServices.map((service) => (
-                <div
-                  key={service.slug}
-                  className="group relative rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="aspect-video w-full rounded-xl bg-gradient-to-br from-rose-100 to-pink-50 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {service.name}
-                  </h3>
-                  <p className="mt-2 text-sm text-gray-600 line-clamp-2">
-                    {service.description}
-                  </p>
-                  <div className="mt-4 flex items-center justify-between">
-                    <span className="text-lg font-bold text-rose-600">
-                      {formatPrice(service.price)}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      {service.duration} min
-                    </span>
-                  </div>
-                  <Link
-                    href="/booking"
-                    className="mt-4 block w-full rounded-lg bg-rose-50 py-2 text-center text-sm font-medium text-rose-600 hover:bg-rose-100 transition-colors"
-                  >
-                    Book Now
-                  </Link>
-                </div>
-              ))}
-            </div>
+            <HomeServices />
             <div className="mt-10 text-center">
               <Link
                 href="/services"
@@ -287,23 +198,7 @@ export default function HomePage() {
                 Professional-grade beauty products for your daily routine.
               </p>
             </div>
-            <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {products.map((product) => (
-                <Link
-                  key={product.slug}
-                  href={`/shop/${product.slug}`}
-                  className="group block rounded-2xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="aspect-square w-full overflow-hidden rounded-xl bg-gradient-to-br from-amber-100 to-rose-50" />
-                  <h3 className="mt-4 text-sm font-semibold text-gray-900 group-hover:text-rose-600 transition-colors">
-                    {product.name}
-                  </h3>
-                  <p className="mt-1 text-sm font-bold text-rose-600">
-                    {formatPrice(product.price)}
-                  </p>
-                </Link>
-              ))}
-            </div>
+            <HomeProducts />
             <div className="mt-10 text-center">
               <Link
                 href="/shop"
