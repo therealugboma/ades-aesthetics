@@ -351,7 +351,7 @@ export default function ContactPage() {
 
                 <div className="rounded-2xl overflow-hidden border border-gray-200">
                   <iframe
-                    src="https://www.google.com/maps?q=34+Beach+Road+Police+Post+Ebutte+Ikorodu+Lagos+Nigeria&output=embed&z=15"
+                    src="https://maps.google.com/maps?q=6.5842,3.5108&t=&z=14&ie=UTF8&iwloc=&output=embed"
                     width="100%"
                     height="250"
                     style={{ border: 0 }}
@@ -426,7 +426,7 @@ export default function ContactPage() {
             </h2>
             <div className="rounded-2xl overflow-hidden shadow-lg">
               <iframe
-                src="https://www.google.com/maps?q=34+Beach+Road+Police+Post+Ebutte+Ikorodu+Lagos+Nigeria&output=embed&z=15"
+                src="https://maps.google.com/maps?q=6.5842,3.5108&t=&z=14&ie=UTF8&iwloc=&output=embed"
                 width="100%"
                 height="400"
                 style={{ border: 0 }}
