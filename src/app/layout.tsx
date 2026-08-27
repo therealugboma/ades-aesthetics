@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Playfair_Display, Inter } from "next/font/google";
 import "./globals.css";
 import ConvexClientProvider from "@/lib/convex-provider";
-import { Analytics } from "@vercel/analytics/react";
+import { Analytics } from "@vercel/analytics/next";
 
 const playfairDisplay = Playfair_Display({
   variable: "--font-heading",
