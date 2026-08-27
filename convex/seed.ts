@@ -1,6 +1,6 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { hashPassword } from "./lib/password";
+import bcrypt from "bcrypt";
 
 export const seed = mutation({
   args: {},
@@ -218,7 +218,7 @@ export const seed = mutation({
       email: "admin@adesaesthetics.com",
       name: "Admin",
       role: "admin",
-      passwordHash: hashPassword("admin123"),
+      passwordHash: bcrypt.hashSync("admin123", 10),
     });
 
     return "Seeded successfully";

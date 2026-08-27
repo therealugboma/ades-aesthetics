@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { hashPassword, verifyPassword } from "./lib/password";
+import bcrypt from "bcrypt";
 
 export const verifyAdmin = query({
   args: {
@@ -16,7 +16,7 @@ export const verifyAdmin = query({
     if (results.length === 0) return null;
 
     const user = results[0];
-    if (!verifyPassword(args.password, user.passwordHash)) return null;
+    if (!bcrypt.compareSync(args.password, user.passwordHash)) return null;
     if (user.role !== "admin") return null;
 
     return {
@@ -39,7 +39,7 @@ export const updateAdmin = mutation({
     const updates: Record<string, any> = {};
     if (args.email) updates.email = args.email;
     if (args.name) updates.name = args.name;
-    if (args.password) updates.passwordHash = hashPassword(args.password);
+    if (args.password) updates.passwordHash = bcrypt.hashSync(args.password, 10);
     if (Object.keys(updates).length === 0) throw new Error("Nothing to update");
     await ctx.db.patch(args.userId, updates);
     return args.userId;

@@ -32,7 +32,7 @@ export const create = mutation({
       const aptEnd = aptStart + aptService.duration;
       const buffer = 30;
       if (requestedStart < aptEnd + buffer && requestedEnd > aptStart - buffer) {
-        throw new Error("This time slot is no longer available");
+        throw new Error("This time slot is not available. Please try a different time or date. TEST123");
       }
     }
 
@@ -45,7 +45,7 @@ export const create = mutation({
       const blockedStart = timeToMinutes(blocked.startTime);
       const blockedEnd = timeToMinutes(blocked.endTime);
       if (requestedStart < blockedEnd && requestedEnd > blockedStart) {
-        throw new Error("This time slot is blocked");
+        throw new Error("This time slot is blocked. Please try a different time or date.");
       }
     }
 
