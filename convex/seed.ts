@@ -6,7 +6,7 @@ export const seed = mutation({
   handler: async (ctx) => {
     const existingSettings = await ctx.db.query("businessSettings").collect();
     if (existingSettings.length > 0) {
-      throw new Error("Database already seeded");
+      return "Already seeded — skipping";
     }
 
     const services = [
