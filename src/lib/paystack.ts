@@ -2,9 +2,10 @@ declare global {
   interface Window {
     PaystackPop: {
       setup: (config: {
-        key: string;
-        email: string;
-        amount: number;
+        key?: string;
+        access_code?: string;
+        email?: string;
+        amount?: number;
         currency?: string;
         ref?: string;
         onClose?: () => void;
@@ -15,15 +16,11 @@ declare global {
 }
 
 export function initializePaystackPayment({
-  email,
-  amount,
-  reference,
+  accessCode,
   onSuccess,
   onClose,
 }: {
-  email: string;
-  amount: number;
-  reference: string;
+  accessCode: string;
   onSuccess: (response: { reference: string; status: string }) => void;
   onClose?: () => void;
 }) {
@@ -32,11 +29,7 @@ export function initializePaystackPayment({
   }
 
   const handler = window.PaystackPop.setup({
-    key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "",
-    email,
-    amount: amount * 100,
-    currency: "NGN",
-    ref: reference,
+    access_code: accessCode,
     onClose: onClose || (() => {}),
     callback: onSuccess,
   });
