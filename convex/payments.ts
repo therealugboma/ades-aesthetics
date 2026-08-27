@@ -83,6 +83,29 @@ export const getByReference = query({
   },
 });
 
+export const getByReferenceWithOrder = query({
+  args: { reference: v.string() },
+  handler: async (ctx, args) => {
+    const results = await ctx.db
+      .query("payments")
+      .withIndex("by_reference", (q) => q.eq("reference", args.reference))
+      .collect();
+    const payment = results[0] ?? null;
+    if (!payment) return null;
+
+    let orderItems: number | null = null;
+    if (payment.orderId) {
+      const order = await ctx.db.get(payment.orderId);
+      orderItems = order?.items?.length ?? 0;
+    }
+
+    return {
+      ...payment,
+      orderItems,
+    };
+  },
+});
+
 export const list = query({
   args: {
     status: v.optional(

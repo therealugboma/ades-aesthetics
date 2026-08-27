@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const payment = await convexQuery("payments:getByReference", { reference: ref });
+    const payment = await convexQuery("payments:getByReferenceWithOrder", { reference: ref });
     if (!payment) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
         reference: payment.reference,
         amount: payment.amount,
         status: payment.status,
+        orderItems: payment.orderItems,
         metadata,
       },
     });
