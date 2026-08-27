@@ -1,13 +1,5 @@
-import { query } from "./_generated/server";
+import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-
-async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-}
 
 export const verifyAdmin = query({
   args: {
@@ -23,9 +15,7 @@ export const verifyAdmin = query({
     if (results.length === 0) return null;
 
     const user = results[0];
-    const hashedInput = await hashPassword(args.password);
-
-    if (user.passwordHash !== hashedInput) return null;
+    if (user.passwordHash !== args.password) return null;
     if (user.role !== "admin") return null;
 
     return {
@@ -34,5 +24,30 @@ export const verifyAdmin = query({
       name: user.name,
       role: user.role,
     };
+  },
+});
+
+export const updateAdmin = mutation({
+  args: {
+    userId: v.id("users"),
+    email: v.optional(v.string()),
+    password: v.optional(v.string()),
+    name: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const updates: Record<string, any> = {};
+    if (args.email) updates.email = args.email;
+    if (args.name) updates.name = args.name;
+    if (args.password) updates.passwordHash = args.password;
+    if (Object.keys(updates).length === 0) throw new Error("Nothing to update");
+    await ctx.db.patch(args.userId, updates);
+    return args.userId;
+  },
+});
+
+export const listUsers = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("users").collect();
   },
 });
