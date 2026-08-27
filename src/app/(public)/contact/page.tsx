@@ -351,7 +351,7 @@ export default function ContactPage() {
 
                 <div className="rounded-2xl overflow-hidden border border-gray-200">
                   <iframe
-                    src="https://maps.google.com/maps?q=6.5842,3.5108&t=&z=14&ie=UTF8&iwloc=&output=embed"
+                    src="https://www.openstreetmap.org/export/embed.html?bbox=3.505%2C6.580%2C3.517%2C6.589&layer=mapnik&marker=6.5842%2C3.5108"
                     width="100%"
                     height="250"
                     style={{ border: 0 }}
@@ -426,7 +426,7 @@ export default function ContactPage() {
             </h2>
             <div className="rounded-2xl overflow-hidden shadow-lg">
               <iframe
-                src="https://maps.google.com/maps?q=6.5842,3.5108&t=&z=14&ie=UTF8&iwloc=&output=embed"
+                src="https://www.openstreetmap.org/export/embed.html?bbox=3.505%2C6.580%2C3.517%2C6.589&layer=mapnik&marker=6.5842%2C3.5108"
                 width="100%"
                 height="400"
                 style={{ border: 0 }}
@@ -436,9 +436,19 @@ export default function ContactPage() {
                 title="Ades Aesthetics Location"
               />
             </div>
-            <p className="mt-4 text-center text-sm text-gray-500">
-              34, Beach Road, Police Post Ebutte, Ikorodu, Lagos, Nigeria
-            </p>
+                <p className="mt-4 text-center text-sm text-gray-500">
+                  34, Beach Road, Police Post Ebutte, Ikorodu, Lagos, Nigeria
+                </p>
+                <p className="mt-2 text-center">
+                  <a
+                    href="https://www.google.com/maps/search/34+Beach+Road+Police+Post+Ebutte+Ikorodu+Lagos+Nigeria"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-rose-600 hover:text-rose-500 transition-colors"
+                  >
+                    Open in Google Maps &rarr;
+                  </a>
+                </p>
           </div>
         </section>
       </main>
