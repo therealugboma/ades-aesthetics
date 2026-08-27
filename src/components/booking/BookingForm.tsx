@@ -91,8 +91,18 @@ export default function BookingForm() {
         email: formData.email,
         amount: data.amount,
         reference: data.reference,
-        onSuccess: () => {
-          router.push(`/booking/success?ref=${data.reference}`);
+        onSuccess: async () => {
+          try {
+            const statusRes = await fetch(`/api/payment/status?ref=${encodeURIComponent(data.reference)}`);
+            const statusData = await statusRes.json();
+            if (statusRes.ok && statusData.payment && (statusData.payment.status === "success")) {
+              router.push(`/booking/success?ref=${data.reference}`);
+            } else {
+              router.push("/booking/failed");
+            }
+          } catch {
+            router.push(`/booking/success?ref=${data.reference}`);
+          }
         },
         onClose: () => {
           setIsSubmitting(false);
