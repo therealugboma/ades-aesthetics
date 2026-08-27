@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/lib/cart-store";
 import { formatPrice } from "@/lib/utils";
+import { nigeriaStates, getLgas, getPostalCode, getDeliveryEstimate } from "@/lib/nigeria-states";
 
 interface DeliveryInfo {
   fullName: string;
   email: string;
   phone: string;
-  address: string;
-  city: string;
+  state: string;
+  lga: string;
+  postalCode: string;
+  streetAddress: string;
   notes: string;
 }
 
@@ -26,8 +29,10 @@ export default function CheckoutPage() {
     fullName: "",
     email: "",
     phone: "",
-    address: "",
-    city: "Lagos",
+    state: "",
+    lga: "",
+    postalCode: "",
+    streetAddress: "",
     notes: "",
   });
 
@@ -37,11 +42,29 @@ export default function CheckoutPage() {
   );
   const total = subtotal;
 
+  const availableLgas = useMemo(() => {
+    if (!delivery.state) return [];
+    return getLgas(delivery.state);
+  }, [delivery.state]);
+
+  const deliveryEstimate = useMemo(() => {
+    if (!delivery.state) return null;
+    const stateObj = nigeriaStates.find((s) => s.name === delivery.state);
+    return stateObj ? getDeliveryEstimate(stateObj.code) : null;
+  }, [delivery.state]);
+
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setDelivery((prev) => ({ ...prev, [name]: value }));
+    setDelivery((prev) => {
+      const updated = { ...prev, [name]: value };
+      if (name === "state") {
+        updated.lga = "";
+        updated.postalCode = getPostalCode(value);
+      }
+      return updated;
+    });
   };
 
   const handleProceedToPayment = () => {
@@ -49,7 +72,9 @@ export default function CheckoutPage() {
       delivery.fullName &&
       delivery.email &&
       delivery.phone &&
-      delivery.address
+      delivery.state &&
+      delivery.lga &&
+      delivery.streetAddress
     ) {
       setStep("payment");
     }
@@ -67,6 +92,8 @@ export default function CheckoutPage() {
       setIsProcessing(false);
     }
   };
+
+  const fullAddress = `${delivery.streetAddress}, ${delivery.lga}, ${delivery.state} ${delivery.postalCode}`;
 
   return (
     <main className="flex-1 bg-gray-50">
@@ -167,32 +194,99 @@ export default function CheckoutPage() {
                         />
                       </div>
                     </div>
+
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-900">
+                          State *
+                        </label>
+                        <select
+                          name="state"
+                          value={delivery.state}
+                          onChange={handleInputChange}
+                          required
+                          className="mt-2 block w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:border-rose-500 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                        >
+                          <option value="">Select State</option>
+                          {nigeriaStates
+                            .filter((s, i, arr) => arr.findIndex((x) => x.name === s.name) === i)
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map((state) => (
+                              <option key={state.name} value={state.name}>
+                                {state.name}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-900">
+                          Local Government Area (LGA) *
+                        </label>
+                        <select
+                          name="lga"
+                          value={delivery.lga}
+                          onChange={handleInputChange}
+                          required
+                          disabled={!delivery.state}
+                          className="mt-2 block w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:border-rose-500 focus:ring-2 focus:ring-rose-500 focus:outline-none disabled:bg-gray-100 disabled:text-gray-400"
+                        >
+                          <option value="">
+                            {delivery.state ? "Select LGA" : "Select state first"}
+                          </option>
+                          {availableLgas.map((lga) => (
+                            <option key={lga} value={lga}>
+                              {lga}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-900">
+                          Postal Code
+                        </label>
+                        <input
+                          type="text"
+                          name="postalCode"
+                          value={delivery.postalCode}
+                          readOnly
+                          className="mt-2 block w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500"
+                          placeholder="Auto-filled"
+                        />
+                      </div>
+                      <div>
+                        {deliveryEstimate && (
+                          <div className="mt-2 rounded-lg bg-green-50 border border-green-200 px-4 py-3">
+                            <p className="text-sm font-medium text-green-800">
+                              Estimated Delivery: {deliveryEstimate}
+                            </p>
+                            <p className="text-xs text-green-600 mt-0.5">
+                              {delivery.state === "Lagos"
+                                ? "Within Lagos"
+                                : "Outside Lagos"}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-900">
-                        Delivery Address
+                        Street Address *
                       </label>
                       <input
                         type="text"
-                        name="address"
-                        value={delivery.address}
+                        name="streetAddress"
+                        value={delivery.streetAddress}
                         onChange={handleInputChange}
                         required
                         className="mt-2 block w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-rose-500 focus:ring-2 focus:ring-rose-500 focus:outline-none"
-                        placeholder="Street address, area"
+                        placeholder="House number, street name, area"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-900">
-                        City
-                      </label>
-                      <input
-                        type="text"
-                        name="city"
-                        value={delivery.city}
-                        onChange={handleInputChange}
-                        className="mt-2 block w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-rose-500 focus:ring-2 focus:ring-rose-500 focus:outline-none"
-                      />
-                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-900">
                         Delivery Notes (Optional)
@@ -239,9 +333,13 @@ export default function CheckoutPage() {
                     <p className="mt-1 text-sm text-gray-600">
                       {delivery.fullName}
                     </p>
-                    <p className="text-sm text-gray-600">{delivery.address}</p>
-                    <p className="text-sm text-gray-600">{delivery.city}</p>
+                    <p className="text-sm text-gray-600">{fullAddress}</p>
                     <p className="text-sm text-gray-600">{delivery.phone}</p>
+                    {deliveryEstimate && (
+                      <p className="mt-2 text-sm font-medium text-green-700">
+                        Estimated delivery: {deliveryEstimate}
+                      </p>
+                    )}
                   </div>
 
                   <div className="mt-6">
