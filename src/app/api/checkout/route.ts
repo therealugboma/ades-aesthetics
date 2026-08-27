@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
       })),
       deliveryAddress: fullAddress,
       deliveryNotes: delivery.notes || undefined,
+      deliveryFee: shippingFee,
     });
 
     // 3. Create pending payment record

@@ -99,7 +99,7 @@ export const getByReferenceWithOrder = query({
         .query("orderItems")
         .withIndex("by_order", (q) => q.eq("orderId", payment.orderId!))
         .collect();
-      orderItems = items.length;
+      orderItems = items.reduce((sum, item) => sum + item.quantity, 0);
     }
 
     return {
