@@ -27,9 +27,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { destination, weight, totalValue, items } = body;
 
-    if (!destination?.state || !destination?.city) {
+    if (!destination?.state) {
       return NextResponse.json(
-        { error: "State and city are required" },
+        { error: "State is required" },
         { status: 400 }
       );
     }
@@ -82,9 +82,11 @@ export async function POST(request: NextRequest) {
         value: totalValue || 1000,
         weight: 0.5,
       }],
-      service_code: "standard",
+      service_code: "local",
       customs_option: "sender",
     };
+
+    console.log("Sendbox request payload:", JSON.stringify(payload, null, 2));
 
     const response = await fetch(
       `${SENDBOX_BASE_URL}/shipping/shipment_delivery_quote`,
@@ -100,14 +102,15 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Sendbox API error:", errorText);
+      console.error("Sendbox API error:", response.status, errorText);
       return NextResponse.json(
-        { error: "Failed to fetch shipping rates" },
+        { error: "Failed to fetch shipping rates", details: errorText },
         { status: response.status }
       );
     }
 
     const data = await response.json();
+    console.log("Sendbox response:", JSON.stringify(data, null, 2));
 
     const rates: ShippingRate[] = (data.rates || [])
       .filter((r: any) => r.is_enabled)

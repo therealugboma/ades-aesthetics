@@ -119,7 +119,8 @@ export default function CheckoutPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setRatesError(data.error || "Failed to fetch shipping rates");
+        console.error("Shipping API error:", data);
+        setRatesError(data.details || data.error || "Failed to fetch shipping rates");
         return;
       }
 
