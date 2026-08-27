@@ -4,20 +4,33 @@ import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "convex/_generated/api";
 import { useState, useRef } from "react";
 
+interface ProductForm {
+  name: string;
+  slug: string;
+  description: string;
+  price: string;
+  categoryId: string;
+  stock: string;
+  isFeatured: boolean;
+}
+
+const emptyForm: ProductForm = {
+  name: "", slug: "", description: "", price: "", categoryId: "", stock: "", isFeatured: false,
+};
+
 export default function AdminProductsPage() {
   const products = useQuery(api.products.listAll);
   const categories = useQuery(api.products.listCategories);
   const createProduct = useMutation(api.products.create);
+  const updateProduct = useMutation(api.products.update);
   const deleteProduct = useMutation(api.products.remove);
   const generateUploadUrl = useAction(api.upload.generateUploadUrl);
   const getStorageUrl = useAction(api.upload.getStorageUrl);
 
   const [search, setSearch] = useState("");
-  const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({
-    name: "", slug: "", description: "", price: "", categoryId: "",
-    stock: "", isFeatured: false,
-  });
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState<any>(null);
+  const [form, setForm] = useState<ProductForm>(emptyForm);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [saving, setSaving] = useState(false);
@@ -39,12 +52,38 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const openAdd = () => {
+    setEditing(null);
+    setForm(emptyForm);
+    setFile(null);
+    setPreview("");
+    setError("");
+    setShowModal(true);
+  };
+
+  const openEdit = (p: any) => {
+    setEditing(p);
+    setForm({
+      name: p.name,
+      slug: p.slug,
+      description: p.description || "",
+      price: String(p.price),
+      categoryId: p.categoryId || "",
+      stock: String(p.stock),
+      isFeatured: p.isFeatured || false,
+    });
+    setFile(null);
+    setPreview(p.imageUrl || "");
+    setError("");
+    setShowModal(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSaving(true);
     try {
-      let imageUrl = "";
+      let imageUrl = editing?.imageUrl || "";
 
       if (file) {
         const uploadUrl = await generateUploadUrl();
@@ -57,25 +96,49 @@ export default function AdminProductsPage() {
         imageUrl = await getStorageUrl({ storageId: storageId as string });
       }
 
-      await createProduct({
-        name: form.name,
-        slug: form.slug || slugify(form.name),
-        description: form.description,
-        price: Number(form.price),
-        categoryId: form.categoryId as any,
-        imageUrl,
-        stock: Number(form.stock),
-        isFeatured: form.isFeatured,
-      });
-      setShowAdd(false);
-      setForm({ name: "", slug: "", description: "", price: "", categoryId: "", stock: "", isFeatured: false });
+      if (editing) {
+        await updateProduct({
+          id: editing._id,
+          name: form.name,
+          slug: form.slug || slugify(form.name),
+          description: form.description,
+          price: Number(form.price),
+          categoryId: form.categoryId as any,
+          imageUrl,
+          stock: Number(form.stock),
+          isFeatured: form.isFeatured,
+        });
+      } else {
+        await createProduct({
+          name: form.name,
+          slug: form.slug || slugify(form.name),
+          description: form.description,
+          price: Number(form.price),
+          categoryId: form.categoryId as any,
+          imageUrl,
+          stock: Number(form.stock),
+          isFeatured: form.isFeatured,
+        });
+      }
+      setShowModal(false);
+      setForm(emptyForm);
+      setEditing(null);
       setFile(null);
       setPreview("");
     } catch (err: any) {
-      setError(err.message || "Failed to create product");
+      setError(err.message || "Failed to save product");
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDelete = async (p: any) => {
+    if (!confirm(`Deactivate "${p.name}"?`)) return;
+    await deleteProduct({ id: p._id });
+  };
+
+  const handleToggleActive = async (p: any) => {
+    await updateProduct({ id: p._id, isActive: !p.isActive });
   };
 
   return (
@@ -88,25 +151,26 @@ export default function AdminProductsPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="rounded-lg border border-gray-300 px-4 py-2 text-sm w-64"
           />
-          <button onClick={() => setShowAdd(true)}
+          <button onClick={openAdd}
             className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700">
             + Add Product
           </button>
         </div>
       </div>
 
-      {showAdd && (
+      {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Add Product</h2>
-              <button onClick={() => setShowAdd(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+              <h2 className="text-xl font-bold text-gray-900">
+                {editing ? "Edit Product" : "Add Product"}
+              </h2>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
             </div>
 
             {error && <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
-            <form onSubmit={handleCreate} className="space-y-4">
-              {/* Photo upload */}
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Product Photo</label>
                 <input ref={fileRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
@@ -186,13 +250,13 @@ export default function AdminProductsPage() {
               </label>
 
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowAdd(false)}
+                <button type="button" onClick={() => setShowModal(false)}
                   className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
                   Cancel
                 </button>
                 <button type="submit" disabled={saving}
                   className="flex-1 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50">
-                  {saving ? "Creating..." : "Create Product"}
+                  {saving ? "Saving..." : editing ? "Update" : "Create"}
                 </button>
               </div>
             </form>
@@ -228,14 +292,18 @@ export default function AdminProductsPage() {
                 <td className="px-4 py-3 text-gray-700">₦{p.price?.toLocaleString()}</td>
                 <td className="px-4 py-3 text-gray-700">{p.stock}</td>
                 <td className="px-4 py-3">
-                  <span className={`rounded-full px-2 py-1 text-xs font-medium ${
-                    p.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-                  }`}>{p.isActive ? "Active" : "Inactive"}</span>
+                  <button onClick={() => handleToggleActive(p)}
+                    className={`rounded-full px-2 py-1 text-xs font-medium cursor-pointer transition-colors ${
+                      p.isActive ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                    }`}>{p.isActive ? "Active" : "Inactive"}</button>
                 </td>
                 <td className="px-4 py-3">
-                  <button onClick={async () => {
-                      if (confirm("Deactivate this product?")) await deleteProduct({ id: p._id });
-                    }} className="text-red-600 hover:text-red-700 text-sm">Deactivate</button>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => openEdit(p)}
+                      className="text-rose-600 hover:text-rose-700 text-sm font-medium">Edit</button>
+                    <button onClick={() => handleDelete(p)}
+                      className="text-red-600 hover:text-red-700 text-sm font-medium">Deactivate</button>
+                  </div>
                 </td>
               </tr>
             ))}
