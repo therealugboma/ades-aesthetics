@@ -349,18 +349,30 @@ export default function ContactPage() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl overflow-hidden border border-gray-200">
-                  <iframe
-                    src="https://www.openstreetmap.org/export/embed.html?bbox=3.505%2C6.580%2C3.517%2C6.589&layer=mapnik&marker=6.5842%2C3.5108"
-                    width="100%"
-                    height="250"
-                    style={{ border: 0 }}
-                    allowFullScreen
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    title="Ades Aesthetics Location"
-                  />
-                </div>
+                <a
+                  href="https://www.google.com/maps/search/34+Beach+Road+Police+Post+Ebutte+Ikorodu+Lagos+Nigeria"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block rounded-2xl border border-gray-200 bg-gradient-to-br from-rose-50 to-pink-50 p-6 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100">
+                      <svg className="h-5 w-5 text-rose-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900">View on Google Maps</h3>
+                      <p className="text-xs text-gray-500">Tap for directions</p>
+                    </div>
+                    <svg className="ml-auto h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                    </svg>
+                  </div>
+                  <p className="text-sm text-gray-600">34, Beach Road, Police Post Ebutte</p>
+                  <p className="text-sm text-gray-600">Ikorodu, Lagos, Nigeria</p>
+                </a>
 
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900">
@@ -424,31 +436,29 @@ export default function ContactPage() {
             <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-6 text-center">
               Find Us
             </h2>
-            <div className="rounded-2xl overflow-hidden shadow-lg">
-              <iframe
-                src="https://www.openstreetmap.org/export/embed.html?bbox=3.505%2C6.580%2C3.517%2C6.589&layer=mapnik&marker=6.5842%2C3.5108"
-                width="100%"
-                height="400"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title="Ades Aesthetics Location"
-              />
-            </div>
-                <p className="mt-4 text-center text-sm text-gray-500">
-                  34, Beach Road, Police Post Ebutte, Ikorodu, Lagos, Nigeria
-                </p>
-                <p className="mt-2 text-center">
-                  <a
-                    href="https://www.google.com/maps/search/34+Beach+Road+Police+Post+Ebutte+Ikorodu+Lagos+Nigeria"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm font-medium text-rose-600 hover:text-rose-500 transition-colors"
-                  >
-                    Open in Google Maps &rarr;
-                  </a>
-                </p>
+            <a
+              href="https://www.google.com/maps/search/34+Beach+Road+Police+Post+Ebutte+Ikorodu+Lagos+Nigeria"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block rounded-2xl border border-gray-200 bg-white p-8 shadow-lg hover:shadow-xl transition-shadow text-center"
+            >
+              <div className="flex justify-center mb-4">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-100">
+                  <svg className="h-7 w-7 text-rose-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                  </svg>
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">34, Beach Road, Police Post Ebutte</h3>
+              <p className="text-gray-600 mb-3">Ikorodu, Lagos, Nigeria</p>
+              <span className="inline-flex items-center gap-1 text-sm font-medium text-rose-600">
+                Get Directions
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                </svg>
+              </span>
+            </a>
           </div>
         </section>
       </main>
