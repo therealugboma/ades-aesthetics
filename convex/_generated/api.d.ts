@@ -10,6 +10,7 @@
 
 import type * as admin from "../admin.js";
 import type * as appointments from "../appointments.js";
+import type * as auth from "../auth.js";
 import type * as availability from "../availability.js";
 import type * as blockedTimes from "../blockedTimes.js";
 import type * as contactMessages from "../contactMessages.js";
@@ -35,6 +36,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   appointments: typeof appointments;
+  auth: typeof auth;
   availability: typeof availability;
   blockedTimes: typeof blockedTimes;
   contactMessages: typeof contactMessages;
