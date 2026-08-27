@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+asdfasdf
 
 async function convexMutation(path: string, args: Record<string, unknown>) {
   const url = process.env.NEXT_PUBLIC_CONVEX_URL;
@@ -10,7 +11,7 @@ async function convexMutation(path: string, args: Record<string, unknown>) {
   });
   const result = await res.json();
   if (result.status !== "success") {
-    throw new Error(result.message || `Failed: ${path}`);
+    throw new Error(result.errorMessage || result.message || `Failed: ${path}`);
   }
   return result.value;
 }
@@ -32,6 +33,7 @@ async function convexQuery(path: string, args: Record<string, unknown>) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("Booking checkout: request received");
     const { serviceId, servicePrice, date, time, name, email, phone, notes } =
       await request.json();
 
@@ -50,6 +52,7 @@ export async function POST(request: NextRequest) {
     });
 
     // 2. Create appointment (validates availability + block)
+    console.log("Booking checkout: calling appointments:create with args:", { customerId, serviceId, date, time, notes });
     const appointmentId = await convexMutation("appointments:create", {
       customerId,
       serviceId,

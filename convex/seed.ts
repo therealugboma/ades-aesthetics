@@ -1,5 +1,6 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { hashPassword } from "./lib/password";
 
 export const seed = mutation({
   args: {},
@@ -217,7 +218,7 @@ export const seed = mutation({
       email: "admin@adesaesthetics.com",
       name: "Admin",
       role: "admin",
-      passwordHash: "admin123",
+      passwordHash: hashPassword("admin123"),
     });
 
     return "Seeded successfully";
