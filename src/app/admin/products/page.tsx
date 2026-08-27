@@ -3,11 +3,29 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function AdminProductsPage() {
-  const products = useQuery(api.products.list);
+  const products = useQuery(api.products.listAll);
+  const categories = useQuery(api.products.listCategories);
+  const createProduct = useMutation(api.products.create);
   const deleteProduct = useMutation(api.products.remove);
+  const router = useRouter();
   const [search, setSearch] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
+
+  const [form, setForm] = useState({
+    name: "",
+    slug: "",
+    description: "",
+    price: "",
+    categoryId: "",
+    imageUrl: "",
+    stock: "",
+    isFeatured: false,
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const filtered = search
     ? products?.filter((p: any) =>
@@ -15,18 +33,165 @@ export default function AdminProductsPage() {
       )
     : products;
 
+  const slugify = (text: string) =>
+    text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSaving(true);
+    try {
+      await createProduct({
+        name: form.name,
+        slug: form.slug || slugify(form.name),
+        description: form.description,
+        price: Number(form.price),
+        categoryId: form.categoryId as any,
+        imageUrl: form.imageUrl || "",
+        stock: Number(form.stock),
+        isFeatured: form.isFeatured,
+      });
+      setShowAdd(false);
+      setForm({ name: "", slug: "", description: "", price: "", categoryId: "", imageUrl: "", stock: "", isFeatured: false });
+    } catch (err: any) {
+      setError(err.message || "Failed to create product");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Products</h1>
-        <input
-          type="text"
-          placeholder="Search..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="rounded-lg border border-gray-300 px-4 py-2 text-sm w-64"
-        />
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            placeholder="Search..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="rounded-lg border border-gray-300 px-4 py-2 text-sm w-64"
+          />
+          <button
+            onClick={() => setShowAdd(true)}
+            className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+          >
+            + Add Product
+          </button>
+        </div>
       </div>
+
+      {showAdd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">Add Product</h2>
+              <button onClick={() => setShowAdd(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+
+            {error && <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <input
+                  type="text" required
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value, slug: slugify(e.target.value) })}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Slug</label>
+                <input
+                  type="text"
+                  value={form.slug}
+                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm"
+                  placeholder="auto-generated from name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+                <textarea
+                  required rows={3}
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price (₦) *</label>
+                  <input
+                    type="number" required min={0}
+                    value={form.price}
+                    onChange={(e) => setForm({ ...form, price: e.target.value })}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Stock *</label>
+                  <input
+                    type="number" required min={0}
+                    value={form.stock}
+                    onChange={(e) => setForm({ ...form, stock: e.target.value })}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                <select
+                  required
+                  value={form.categoryId}
+                  onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm"
+                >
+                  <option value="">Select category</option>
+                  {categories?.map((c: any) => (
+                    <option key={c._id} value={c._id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+                <input
+                  type="url"
+                  value={form.imageUrl}
+                  onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm"
+                  placeholder="https://..."
+                />
+              </div>
+
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={form.isFeatured}
+                  onChange={(e) => setForm({ ...form, isFeatured: e.target.checked })}
+                  className="rounded border-gray-300 text-rose-600"
+                />
+                Featured product
+              </label>
+
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowAdd(false)} className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button type="submit" disabled={saving} className="flex-1 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50">
+                  {saving ? "Creating..." : "Create Product"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
         <table className="w-full text-sm">
@@ -44,8 +209,8 @@ export default function AdminProductsPage() {
               <tr key={p._id} className="hover:bg-gray-50">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
-                      IMG
+                    <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs overflow-hidden">
+                      {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-cover" /> : "IMG"}
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">{p.name}</p>
@@ -63,13 +228,13 @@ export default function AdminProductsPage() {
                 <td className="px-4 py-3">
                   <button
                     onClick={async () => {
-                      if (confirm("Delete this product?")) {
+                      if (confirm("Deactivate this product?")) {
                         await deleteProduct({ id: p._id });
                       }
                     }}
                     className="text-red-600 hover:text-red-700 text-sm"
                   >
-                    Delete
+                    Deactivate
                   </button>
                 </td>
               </tr>
