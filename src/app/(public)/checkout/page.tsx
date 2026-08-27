@@ -168,7 +168,9 @@ export default function CheckoutPage() {
       }
 
       initializePaystackPayment({
-        accessCode: data.access_code,
+        email: delivery.email,
+        amount: total,
+        reference: data.reference,
         onSuccess: () => {
           clearCart();
           router.push(`/order/success?ref=${data.reference}`);

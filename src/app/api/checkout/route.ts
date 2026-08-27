@@ -23,11 +23,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const secretKey = process.env.PAYSTACK_SECRET_KEY;
-    if (!secretKey) {
-      return NextResponse.json({ error: "Payment not configured" }, { status: 500 });
-    }
-
     const reference = `ADE-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
     const fullAddress = `${delivery.streetAddress}, ${delivery.lga}, ${delivery.state}${delivery.postalCode ? " " + delivery.postalCode : ""}`;
 
@@ -49,7 +44,7 @@ export async function POST(request: NextRequest) {
       deliveryNotes: delivery.notes || undefined,
     });
 
-    // 3. Create payment record
+    // 3. Create pending payment record
     await convexMutation("payments:create", {
       reference,
       orderId,
@@ -64,35 +59,7 @@ export async function POST(request: NextRequest) {
       }),
     });
 
-    // 4. Initialize Paystack transaction
-    const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${secretKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: delivery.email,
-        amount: Math.round(total * 100),
-        reference,
-        currency: "NGN",
-        metadata: {
-          order_id: orderId,
-          customer_name: delivery.fullName,
-          customer_phone: delivery.phone,
-        },
-      }),
-    });
-
-    const paystackData = await paystackRes.json();
-    if (!paystackData.status) {
-      return NextResponse.json({ error: paystackData.message || "Payment initialization failed" }, { status: 500 });
-    }
-
-    return NextResponse.json({
-      access_code: paystackData.data.access_code,
-      reference,
-    });
+    return NextResponse.json({ reference });
   } catch (error) {
     console.error("Checkout error:", error);
     return NextResponse.json(
