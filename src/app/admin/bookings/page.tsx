@@ -41,36 +41,50 @@ export default function AdminBookingsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filtered?.map((a: any) => (
-              <tr key={a._id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 text-gray-900">{a.customer?.name ?? "Unknown"}</td>
-                <td className="px-4 py-3 text-gray-700">{a.service?.name ?? "Unknown"}</td>
-                <td className="px-4 py-3 text-gray-500">{a.date} {a.time}</td>
-                <td className="px-4 py-3">
-                  <span className={`rounded-full px-2 py-1 text-xs font-medium ${
-                    a.status === "confirmed" ? "bg-green-100 text-green-700" :
-                    a.status === "completed" ? "bg-blue-100 text-blue-700" :
-                    a.status === "cancelled" ? "bg-red-100 text-red-700" :
-                    "bg-yellow-100 text-yellow-700"
-                  }`}>{a.status}</span>
-                </td>
-                <td className="px-4 py-3">
-                  <select
-                    value={a.status}
-                    onChange={async (e) => {
-                      await updateStatus({ id: a._id, status: e.target.value as any });
-                    }}
-                    className="rounded border border-gray-300 px-2 py-1 text-xs"
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                    <option value="no_show">No Show</option>
-                  </select>
+            {appointments === undefined ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-500">
+                  Loading bookings...
                 </td>
               </tr>
-            ))}
+            ) : filtered?.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-500">
+                  No bookings found. Bookings will appear here after customers complete the booking flow.
+                </td>
+              </tr>
+            ) : (
+              filtered?.map((a: any) => (
+                <tr key={a._id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-gray-900">{a.customer?.name ?? "Unknown"}</td>
+                  <td className="px-4 py-3 text-gray-700">{a.service?.name ?? "Unknown"}</td>
+                  <td className="px-4 py-3 text-gray-500">{a.date} {a.time}</td>
+                  <td className="px-4 py-3">
+                    <span className={`rounded-full px-2 py-1 text-xs font-medium ${
+                      a.status === "confirmed" ? "bg-green-100 text-green-700" :
+                      a.status === "completed" ? "bg-blue-100 text-blue-700" :
+                      a.status === "cancelled" ? "bg-red-100 text-red-700" :
+                      "bg-yellow-100 text-yellow-700"
+                    }`}>{a.status}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <select
+                      value={a.status}
+                      onChange={async (e) => {
+                        await updateStatus({ id: a._id, status: e.target.value as any });
+                      }}
+                      className="rounded border border-gray-300 px-2 py-1 text-xs"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="confirmed">Confirmed</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                      <option value="no_show">No Show</option>
+                    </select>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
