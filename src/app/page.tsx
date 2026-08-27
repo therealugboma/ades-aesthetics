@@ -389,9 +389,9 @@ export default function HomePage() {
                         Address
                       </h3>
                       <p className="mt-1 text-sm text-gray-600">
-                        14 Admiralty Way, Lekki Phase 1
+                        34, Beach Road, Police Post Ebutte
                         <br />
-                        Lagos, Nigeria
+                        Ikorodu, Lagos, Nigeria
                       </p>
                     </div>
                   </div>
@@ -439,7 +439,7 @@ export default function HomePage() {
                         Phone
                       </h3>
                       <p className="mt-1 text-sm text-gray-600">
-                        +234 801 234 5678
+                        +234 816 469 5802
                       </p>
                     </div>
                   </div>

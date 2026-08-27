@@ -202,7 +202,7 @@ export default function ContactPage() {
                 </div>
 
                 <a
-                  href="https://wa.me/2348012345678"
+                  href="https://wa.me/message/WYVXLRGBW4FGF1"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-4 rounded-2xl border border-green-200 bg-green-50 p-5 hover:bg-green-100 transition-colors"
@@ -251,9 +251,9 @@ export default function ContactPage() {
                         Our Address
                       </h3>
                       <p className="mt-1 text-sm text-gray-600">
-                        14 Admiralty Way, Lekki Phase 1
+                        34, Beach Road, Police Post Ebutte
                         <br />
-                        Lagos, Nigeria
+                        Ikorodu, Lagos, Nigeria
                       </p>
                     </div>
                   </div>
@@ -277,10 +277,10 @@ export default function ContactPage() {
                         Phone
                       </h3>
                       <a
-                        href="tel:+2348012345678"
+                        href="tel:+2348164695802"
                         className="mt-1 block text-sm text-gray-600 hover:text-rose-600 transition-colors"
                       >
-                        +234 801 234 5678
+                        +234 816 469 5802
                       </a>
                     </div>
                   </div>
@@ -331,9 +331,8 @@ export default function ContactPage() {
                         Business Hours
                       </h3>
                       <ul className="mt-1 space-y-1 text-sm text-gray-600">
-                        <li>Monday - Friday: 9:00 AM - 7:00 PM</li>
-                        <li>Saturday: 9:00 AM - 6:00 PM</li>
-                        <li>Sunday: 12:00 PM - 5:00 PM</li>
+                        <li>Monday - Saturday: 10:00 AM - 7:00 PM</li>
+                        <li>Sunday: Closed</li>
                       </ul>
                     </div>
                   </div>
@@ -345,7 +344,7 @@ export default function ContactPage() {
                   </h3>
                   <div className="mt-3 flex gap-4">
                     <a
-                      href="https://instagram.com/adesaesthetics"
+                      href="https://www.instagram.com/ades_aesthetics"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-rose-100 hover:text-rose-600 transition-colors"
@@ -360,7 +359,7 @@ export default function ContactPage() {
                       </svg>
                     </a>
                     <a
-                      href="https://tiktok.com/@adesaesthetics"
+                      href="https://www.tiktok.com/@ades_aesthetics"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-rose-100 hover:text-rose-600 transition-colors"
