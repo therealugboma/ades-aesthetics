@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
 import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
+import { initializePaystackPayment, loadPaystackScript } from "@/lib/paystack";
 
 interface FormData {
   name: string;
@@ -28,8 +29,11 @@ export default function BookingForm() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const today = new Date();
-  const daysInMonth = new Date(
+  useEffect(() => {
+    loadPaystackScript().catch(() => {});
+  }, []);
+
+  const today = new Date();  const daysInMonth = new Date(
     today.getFullYear(),
     today.getMonth() + 1,
     0
@@ -57,9 +61,48 @@ export default function BookingForm() {
   }
 
   const handleSubmit = async () => {
+    if (!selectedService || !selectedDate || !selectedTime) return;
     setIsSubmitting(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    router.push("/booking/success");
+
+    try {
+      const res = await fetch("/api/booking/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          serviceId: selectedService._id,
+          servicePrice: selectedService.price,
+          date: selectedDate,
+          time: selectedTime,
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          notes: formData.notes,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Booking failed. Please try again.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      initializePaystackPayment({
+        email: formData.email,
+        amount: data.amount,
+        reference: data.reference,
+        onSuccess: () => {
+          router.push(`/booking/success?ref=${data.reference}`);
+        },
+        onClose: () => {
+          setIsSubmitting(false);
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong. Please try again.");
+      setIsSubmitting(false);
+    }
   };
 
   return (
