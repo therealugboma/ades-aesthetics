@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   try {
     await resend.emails.send({
       from: "Ades Aesthetics <onboarding@resend.dev>",
-      to: process.env.ADMIN_EMAIL || "hello@adesaesthetics.com",
+      to: process.env.ADMIN_EMAIL || "adesaesthetics@gmail.com",
       replyTo: email,
       subject: `[Contact Form] ${subject}`,
       html: `
