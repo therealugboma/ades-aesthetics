@@ -150,10 +150,10 @@ export default function Footer() {
                   />
                 </svg>
                 <a
-                  href="mailto:hello@adesaesthetics.com"
+                  href="mailto:adesaesthetics@gmail.com"
                   className="hover:text-rose-gold-light"
                 >
-                  hello@adesaesthetics.com
+                  adesaesthetics@gmail.com
                 </a>
               </li>
               <li className="flex items-center gap-2">

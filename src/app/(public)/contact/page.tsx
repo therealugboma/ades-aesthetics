@@ -315,10 +315,10 @@ export default function ContactPage() {
                         Email
                       </h3>
                       <a
-                        href="mailto:hello@adesaesthetics.com"
+                        href="mailto:adesaesthetics@gmail.com"
                         className="mt-1 block text-sm text-gray-600 hover:text-rose-600 transition-colors"
                       >
-                        hello@adesaesthetics.com
+                        adesaesthetics@gmail.com
                       </a>
                     </div>
                   </div>

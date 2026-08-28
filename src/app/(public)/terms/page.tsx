@@ -74,7 +74,7 @@ export default function TermsPage() {
               <div className="space-y-4 text-gray-600 leading-relaxed">
                 <p>For questions about these terms, contact us at:</p>
                 <ul className="list-disc pl-6 space-y-2">
-                  <li>Email: hello@adesaesthetics.com</li>
+                  <li>Email: adesaesthetics@gmail.com</li>
                   <li>Phone: +234 816 469 5802</li>
                   <li>Address: 34, Beach Road, Police Post Ebutte, Ikorodu, Lagos, Nigeria</li>
                 </ul>

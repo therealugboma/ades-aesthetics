@@ -275,7 +275,7 @@ export const seed = mutation({
       { key: "deposit_percentage", value: "30" },
       { key: "whatsapp_number", value: "+2348000000000" },
       { key: "address", value: "123 Beauty Lane, Victoria Island, Lagos, Nigeria" },
-      { key: "email", value: "hello@adesaesthetics.com" },
+      { key: "email", value: "adesaesthetics@gmail.com" },
       { key: "phone", value: "+2348000000000" },
       { key: "instagram", value: "@adesaesthetics" },
     ];

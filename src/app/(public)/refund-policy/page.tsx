@@ -86,7 +86,7 @@ export default function RefundPolicyPage() {
                 <ul className="list-disc pl-6 space-y-2">
                   <li><strong>WhatsApp:</strong> <a href="https://wa.me/message/WYVXLRGBW4FGF1" className="text-rose-600 hover:text-rose-700 underline">Chat with us</a></li>
                   <li><strong>Phone:</strong> +234 816 469 5802</li>
-                  <li><strong>Email:</strong> <a href="mailto:hello@adesaesthetics.com" className="text-rose-600 hover:text-rose-700 underline">hello@adesaesthetics.com</a></li>
+                  <li><strong>Email:</strong> <a href="mailto:adesaesthetics@gmail.com" className="text-rose-600 hover:text-rose-700 underline">adesaesthetics@gmail.com</a></li>
                 </ul>
                 <p>
                   Please include your order/booking reference number, the reason for your refund request, and any supporting evidence (photos for damaged products). We aim to respond to all refund requests within 24 hours.

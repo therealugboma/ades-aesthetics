@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         country: "NG",
         post_code: "102216",
         phone: "+234 816 469 5802",
-        email: "hello@adesaesthetics.com",
+        email: "adesaesthetics@gmail.com",
       },
       destination: {
         first_name: destination.fullName?.split(" ")[0] || "",
