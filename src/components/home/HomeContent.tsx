@@ -2,6 +2,7 @@
 
 import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
+import Image from "next/image";
 import Link from "next/link";
 import { getServicePriceLabel } from "@/lib/service-pricing";
 
@@ -29,12 +30,15 @@ export function HomeServices() {
           key={service._id}
           className="group relative rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow"
         >
-          <div className="aspect-video w-full overflow-hidden rounded-xl bg-gradient-to-br from-rose-100 to-pink-50 mb-4">
+          <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-gradient-to-br from-rose-100 to-pink-50 mb-4">
             {(service.imageUrls?.[0] || service.imageUrl) && (
-              <img
-                src={service.imageUrls?.[0] || service.imageUrl}
+              <Image
+                src={(service.imageUrls?.[0] || service.imageUrl)!}
                 alt={`${service.name} result`}
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                fill
+                sizes="(max-width: 640px) calc(100vw - 2rem), (max-width: 1024px) 50vw, 33vw"
+                quality={75}
+                className="object-cover transition-transform duration-300 group-hover:scale-105 motion-reduce:transition-none"
               />
             )}
           </div>
@@ -85,12 +89,15 @@ export function HomeProducts() {
           href={`/shop/${product.slug}`}
           className="group block rounded-2xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
         >
-          <div className="aspect-square w-full overflow-hidden rounded-xl bg-gradient-to-br from-amber-100 to-rose-50">
+          <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-gradient-to-br from-amber-100 to-rose-50">
             {(product.imageUrls?.[0] || product.imageUrl) && (
-              <img
+              <Image
                 src={product.imageUrls?.[0] || product.imageUrl}
                 alt={product.name}
-                className="h-full w-full object-cover"
+                fill
+                sizes="(max-width: 640px) calc(100vw - 2rem), (max-width: 1024px) 50vw, 25vw"
+                quality={75}
+                className="object-cover"
               />
             )}
           </div>

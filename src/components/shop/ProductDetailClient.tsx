@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
 import { useParams } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import CartDrawer from "@/components/shop/CartDrawer";
 import { useCartStore } from "@/lib/cart-store";
@@ -55,6 +56,14 @@ export default function ProductDetailClient() {
       ? [product.imageUrl]
       : [];
   const coverImage = productImages[0] || product.imageUrl;
+  const activeIndex = productImages.length > 0 ? activeImage % productImages.length : 0;
+  const visibleIndexes = productImages.length <= 3
+    ? productImages.map((_, index) => index)
+    : Array.from(new Set([
+        activeIndex,
+        (activeIndex - 1 + productImages.length) % productImages.length,
+        (activeIndex + 1) % productImages.length,
+      ]));
 
   const handleAddToCart = () => {
     addItem({
@@ -94,10 +103,21 @@ export default function ProductDetailClient() {
 
         <div className="grid gap-8 lg:grid-cols-2">
           <div>
-            <div className="aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-amber-100 to-rose-50">
-              {productImages[activeImage] && (
-                <img src={productImages[activeImage]} alt={`${product.name} view ${activeImage + 1}`} className="h-full w-full object-cover" />
-              )}
+            <div className="relative aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-amber-100 to-rose-50">
+              {productImages[activeIndex] && visibleIndexes.map((index) => (
+                <Image
+                  key={`${productImages[index]}-${index}`}
+                  src={productImages[index]}
+                  alt={index === activeIndex ? `${product.name} view ${index + 1}` : ""}
+                  fill
+                  sizes="(max-width: 1024px) calc(100vw - 2rem), 50vw"
+                  quality={75}
+                  draggable={false}
+                  className={`object-cover transition-opacity duration-300 ease-out motion-reduce:transition-none ${
+                    index === activeIndex ? "opacity-100" : "pointer-events-none opacity-0"
+                  }`}
+                />
+              ))}
             </div>
             {productImages.length > 1 && (
               <div className="mt-3 grid grid-cols-5 gap-2">
@@ -106,10 +126,17 @@ export default function ProductDetailClient() {
                     key={`${image}-${index}`}
                     type="button"
                     onClick={() => setActiveImage(index)}
-                    className={`aspect-square overflow-hidden rounded-lg border-2 ${index === activeImage ? "border-rose-600" : "border-transparent hover:border-rose-200"}`}
+                    className={`relative aspect-square overflow-hidden rounded-lg border-2 ${index === activeIndex ? "border-rose-600" : "border-transparent hover:border-rose-200"}`}
                     aria-label={`Show product picture ${index + 1}`}
                   >
-                    <img src={image} alt="" className="h-full w-full object-cover" />
+                    <Image
+                      src={image}
+                      alt=""
+                      fill
+                      sizes="(max-width: 1024px) 20vw, 10vw"
+                      quality={75}
+                      className="object-cover"
+                    />
                   </button>
                 ))}
               </div>

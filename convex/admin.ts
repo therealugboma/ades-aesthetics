@@ -4,6 +4,7 @@ import { hashPassword, verifyPassword } from "./password";
 import { requireAdmin } from "./helpers";
 
 const MAX_SESSION_MS = 24 * 60 * 60 * 1000;
+const MAX_CONCURRENT_SESSIONS = 12;
 
 export const startSession = mutation({
   args: {
@@ -30,9 +31,33 @@ export const startSession = mutation({
     if (!user || user.role !== "admin") return null;
     if (!(await verifyPassword(args.password, user.passwordHash))) return null;
 
-    await ctx.db.patch(user._id, {
+    const existingSessions = await ctx.db
+      .query("adminSessions")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+
+    const activeSessions = [];
+    for (const session of existingSessions) {
+      if (session.expiresAt < now) {
+        await ctx.db.delete(session._id);
+      } else {
+        activeSessions.push(session);
+      }
+    }
+
+    if (activeSessions.length >= MAX_CONCURRENT_SESSIONS) {
+      const oldestFirst = activeSessions.sort((a, b) => a.createdAt - b.createdAt);
+      const removeCount = activeSessions.length - MAX_CONCURRENT_SESSIONS + 1;
+      for (const session of oldestFirst.slice(0, removeCount)) {
+        await ctx.db.delete(session._id);
+      }
+    }
+
+    await ctx.db.insert("adminSessions", {
+      userId: user._id,
       sessionToken: args.sessionToken,
-      sessionExpiry: args.expiry,
+      expiresAt: args.expiry,
+      createdAt: now,
     });
 
     return {

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useCallback, useContext, useState, useEffect, ReactNode } from "react";
 
 interface AdminUser {
   email: string;
@@ -12,12 +12,28 @@ interface AdminAuthContextType {
   user: AdminUser | null;
   sessionToken: string | null;
   loading: boolean;
+  refreshSession: () => Promise<boolean>;
+}
+
+interface AdminSessionResponse {
+  user: AdminUser;
+  sessionToken: string;
+}
+
+async function fetchAdminSession(): Promise<AdminSessionResponse> {
+  const response = await fetch("/api/auth/me", {
+    credentials: "same-origin",
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("Admin session unavailable");
+  return await response.json();
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType>({
   user: null,
   sessionToken: null,
   loading: true,
+  refreshSession: async () => false,
 });
 
 export function useAdminAuth() {
@@ -29,25 +45,44 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const refreshSession = useCallback(async () => {
+    try {
+      const data = await fetchAdminSession();
+      setUser(data.user);
+      setSessionToken(data.sessionToken);
+      return true;
+    } catch {
+      setUser(null);
+      setSessionToken(null);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
-      })
+    let active = true;
+    fetchAdminSession()
       .then((data) => {
+        if (!active) return;
         setUser(data.user);
         setSessionToken(data.sessionToken);
       })
       .catch(() => {
+        if (!active) return;
         setUser(null);
         setSessionToken(null);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   return (
-    <AdminAuthContext.Provider value={{ user, sessionToken, loading }}>
+    <AdminAuthContext.Provider value={{ user, sessionToken, loading, refreshSession }}>
       {children}
     </AdminAuthContext.Provider>
   );

@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAdminAuth } from "@/lib/admin-auth-context";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const { refreshSession } = useAdminAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,6 +20,7 @@ export default function AdminLoginPage() {
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
@@ -29,7 +32,12 @@ export default function AdminLoginPage() {
         return;
       }
 
-      router.push("/admin");
+      const sessionReady = await refreshSession();
+      if (!sessionReady) {
+        setError("Signed in, but the dashboard session could not be loaded. Please try again.");
+        return;
+      }
+      router.replace("/admin");
       router.refresh();
     } catch {
       setError("Something went wrong");

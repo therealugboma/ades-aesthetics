@@ -39,6 +39,7 @@ export default function GalleryGrid({ images }: GalleryGridProps) {
               alt={image.alt}
               className="h-auto w-full transition-transform duration-300 hover:scale-105"
               loading="lazy"
+              decoding="async"
             />
           </div>
         ))}
@@ -61,6 +62,7 @@ export default function GalleryGrid({ images }: GalleryGridProps) {
             src={lightboxImage.url}
             alt={lightboxImage.alt}
             className="max-h-[85vh] max-w-full rounded-lg object-contain"
+            decoding="async"
             onClick={(e) => e.stopPropagation()}
           />
           <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm text-white/80">

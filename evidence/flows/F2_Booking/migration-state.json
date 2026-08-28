@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-08-27T23:25:02.095Z",
+  "generatedAt": "2026-08-28T11:54:26.416Z",
   "environment": "development",
   "deploymentOrigin": "https://famous-possum-319.eu-west-1.convex.cloud",
   "trackedSchema": "convex/schema.ts",
-  "schemaSha256": "cb7f27d0126b2d35d806d5c4814117afaf20f36abba2485f2f127a3b667686f3",
+  "schemaSha256": "b7a93f0f3a19b2c7e0f19a554c210586119bdabcf9796f1ac2c25ef9de93ce01",
   "appliedSchema": true,
   "authorizationBoundaryVerified": true,
   "migrationLedger": {

@@ -2,6 +2,7 @@
 
 import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
+import type { Doc } from "convex/_generated/dataModel";
 import ServiceCard from "./ServiceCard";
 
 export default function ServiceGrid() {
@@ -25,10 +26,14 @@ export default function ServiceGrid() {
     );
   }
 
+  const firstImageIndex = services.findIndex(
+    (service) => Boolean(service.imageUrls?.[0] || service.imageUrl)
+  );
+
   return (
     <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-      {services.map((service: any) => (
-        <ServiceCard key={service._id} service={service} />
+      {services.map((service: Doc<"services">, index) => (
+        <ServiceCard key={service._id} service={service} eager={index === firstImageIndex} />
       ))}
     </div>
   );

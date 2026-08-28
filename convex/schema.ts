@@ -12,6 +12,14 @@ export default defineSchema({
   }).index("by_email", ["email"])
     .index("by_sessionToken", ["sessionToken"]),
 
+  adminSessions: defineTable({
+    userId: v.id("users"),
+    sessionToken: v.string(),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+  }).index("by_sessionToken", ["sessionToken"])
+    .index("by_user", ["userId"]),
+
   customers: defineTable({
     name: v.string(),
     email: v.string(),

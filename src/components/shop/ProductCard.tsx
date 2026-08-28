@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useCartStore } from "@/lib/cart-store";
 import { formatPrice } from "@/lib/utils";
 
@@ -43,10 +44,13 @@ export default function ProductCard({ product }: ProductCardProps) {
         onClick={() => router.push(`/shop/${product.slug}`)}
       >
         {coverImage ? (
-          <img
+          <Image
             src={coverImage}
             alt={product.name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            fill
+            sizes="(max-width: 640px) calc(100vw - 2rem), (max-width: 1024px) 50vw, 33vw"
+            quality={75}
+            className="object-cover transition-transform duration-300 group-hover:scale-105 motion-reduce:transition-none"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-gray-300">

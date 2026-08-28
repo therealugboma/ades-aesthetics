@@ -64,8 +64,11 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
+      expires: new Date(expiry),
       maxAge: 24 * 60 * 60,
+      priority: "high",
     });
+    res.headers.set("Cache-Control", "no-store");
 
     return res;
   } catch (error) {

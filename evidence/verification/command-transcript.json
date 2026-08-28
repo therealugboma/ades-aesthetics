@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-27T23:24:27.057Z",
+  "generatedAt": "2026-08-28T11:53:13.183Z",
   "manifest": "BUILD_VERIFICATION.json",
   "commands": [
     {
@@ -9,10 +9,10 @@
         "test"
       ],
       "definitionFile": "package.json",
-      "startedAt": "2026-08-27T23:24:27.059Z",
-      "finishedAt": "2026-08-27T23:24:29.356Z",
+      "startedAt": "2026-08-28T11:53:13.185Z",
+      "finishedAt": "2026-08-28T11:53:16.787Z",
       "exitCode": 0,
-      "stdout": "\n> ades-aesthetics@0.1.0 test\n> node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/*.test.mjs\n\n✔ admin access requires a session token (1.415176ms)\n✔ admin access rejects unknown and expired sessions (0.392757ms)\n✔ admin access rejects a valid non-admin session (0.204453ms)\n✔ admin access returns the authenticated administrator (0.82496ms)\n✔ admin JWTs round-trip and preserve their session (2.760694ms)\n✔ admin JWT verification rejects tampering (0.387291ms)\n✔ admin JWT verification rejects expired sessions (0.303656ms)\n✔ expired unpaid reservations stop blocking appointment slots (1.898901ms)\n✔ active unpaid reservations block the slot until their explicit expiry (0.210887ms)\n✔ confirmed appointments block availability and cancelled ones do not (0.173978ms)\n✔ appointment overlap includes the configured turnaround buffer (0.216453ms)\n✔ available slot generation excludes conflicts and services that run past closing (1.079692ms)\n✔ payment finalization only accepts active reservations or confirmed bookings (0.283611ms)\n✔ payment finalization requires the configured server-to-server secret (0.197048ms)\n✔ admin passwords use a Convex-safe bcrypt hash (883.452314ms)\nℹ tests 15\nℹ suites 0\nℹ pass 15\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1168.140429\n",
+      "stdout": "\n> ades-aesthetics@0.1.0 test\n> node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/*.test.mjs\n\n✔ admin access requires a session token (3.657822ms)\n✔ admin access rejects unknown and expired sessions (1.067917ms)\n✔ admin access rejects a valid non-admin session (0.518018ms)\n✔ admin access returns the authenticated administrator (5.799842ms)\n✔ the same administrator can keep concurrent sessions on different devices (1.147393ms)\n✔ multi-device sessions still enforce expiry and the admin role (0.63394ms)\n✔ admin JWTs round-trip and preserve their session (5.512989ms)\n✔ admin JWT verification rejects tampering (0.570506ms)\n✔ admin JWT verification rejects expired sessions (0.573802ms)\n✔ expired unpaid reservations stop blocking appointment slots (1.618699ms)\n✔ active unpaid reservations block the slot until their explicit expiry (0.270615ms)\n✔ confirmed appointments block availability and cancelled ones do not (0.245203ms)\n✔ appointment overlap includes the configured turnaround buffer (0.236125ms)\n✔ available slot generation excludes conflicts and services that run past closing (3.718858ms)\n✔ payment finalization only accepts active reservations or confirmed bookings (0.820292ms)\n✔ payment finalization requires the configured server-to-server secret (0.438342ms)\n✔ admin passwords use a Convex-safe bcrypt hash (1411.683504ms)\nℹ tests 17\nℹ suites 0\nℹ pass 17\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1950.2156\n",
       "stderr": ""
     },
     {
@@ -23,10 +23,10 @@
         "build:verify"
       ],
       "definitionFile": "package.json",
-      "startedAt": "2026-08-27T23:24:29.357Z",
-      "finishedAt": "2026-08-27T23:24:57.375Z",
+      "startedAt": "2026-08-28T11:53:16.788Z",
+      "finishedAt": "2026-08-28T11:54:13.735Z",
       "exitCode": 0,
-      "stdout": "\n> ades-aesthetics@0.1.0 build:verify\n> next build --webpack\n\n▲ Next.js 16.3.3 (webpack)\n- Environments: .env.local\n✓ Running next.config.ts took 29ms\n\n  Creating an optimized production build ...\n✓ Compiled successfully in 3.3s\n  Running TypeScript ...\n  Finished TypeScript in 5.3s ...\n  Collecting page data using 7 workers ...\n  Generating static pages using 7 workers (0/47) ...\n  Generating static pages using 7 workers (11/47) \r\n  Generating static pages using 7 workers (23/47) \r\n  Generating static pages using 7 workers (35/47) \r\n✓ Generating static pages using 7 workers (47/47) in 1143ms\n  Finalizing page optimization ...\n  Collecting build traces ...\n\nRoute (app)\n┌ ○ /\n├ ○ /_not-found\n├ ○ /admin\n├ ○ /admin/bookings\n├ ○ /admin/customers\n├ ○ /admin/gallery\n├ ○ /admin/login\n├ ○ /admin/messages\n├ ○ /admin/orders\n├ ○ /admin/payments\n├ ○ /admin/products\n├ ○ /admin/services\n├ ○ /admin/settings\n├ ƒ /api/appointments\n├ ƒ /api/auth/login\n├ ƒ /api/auth/logout\n├ ƒ /api/auth/me\n├ ƒ /api/booking/checkout\n├ ƒ /api/booking/release\n├ ƒ /api/checkout\n├ ƒ /api/email\n├ ƒ /api/gallery\n├ ƒ /api/orders\n├ ƒ /api/payment/status\n├ ƒ /api/products\n├ ƒ /api/products/all\n├ ƒ /api/shipping\n├ ƒ /api/webhook/paystack\n├ ƒ /api/webhook/sendbox\n├ ○ /booking\n├ ○ /booking/failed\n├ ○ /booking/success\n├ ○ /cart\n├ ○ /checkout\n├ ○ /contact\n├ ○ /gallery\n├ ○ /order/failed\n├ ○ /order/success\n├ ○ /privacy\n├ ○ /refund-policy\n├ ○ /robots.txt\n├ ○ /services\n├ ○ /shop\n├ ƒ /shop/[slug]\n├ ○ /sitemap.xml\n└ ○ /terms\n\n\n○  (Static)   prerendered as static content\nƒ  (Dynamic)  server-rendered on demand\n\n",
+      "stdout": "\n> ades-aesthetics@0.1.0 build:verify\n> next build --webpack\n\n▲ Next.js 16.3.3 (webpack)\n- Environments: .env.local\n✓ Running next.config.ts took 66ms\n\n  Creating an optimized production build ...\n✓ Compiled successfully in 13.1s\n  Running TypeScript ...\n  Finished TypeScript in 3.7s ...\n  Collecting page data using 7 workers ...\n  Generating static pages using 7 workers (0/47) ...\n  Generating static pages using 7 workers (11/47) \r\n  Generating static pages using 7 workers (23/47) \r\n  Generating static pages using 7 workers (35/47) \r\n✓ Generating static pages using 7 workers (47/47) in 1466ms\n  Finalizing page optimization ...\n  Collecting build traces ...\n\nRoute (app)\n┌ ○ /\n├ ○ /_not-found\n├ ○ /admin\n├ ○ /admin/bookings\n├ ○ /admin/customers\n├ ○ /admin/gallery\n├ ○ /admin/login\n├ ○ /admin/messages\n├ ○ /admin/orders\n├ ○ /admin/payments\n├ ○ /admin/products\n├ ○ /admin/services\n├ ○ /admin/settings\n├ ƒ /api/appointments\n├ ƒ /api/auth/login\n├ ƒ /api/auth/logout\n├ ƒ /api/auth/me\n├ ƒ /api/booking/checkout\n├ ƒ /api/booking/release\n├ ƒ /api/checkout\n├ ƒ /api/email\n├ ƒ /api/gallery\n├ ƒ /api/orders\n├ ƒ /api/payment/status\n├ ƒ /api/products\n├ ƒ /api/products/all\n├ ƒ /api/shipping\n├ ƒ /api/webhook/paystack\n├ ƒ /api/webhook/sendbox\n├ ○ /booking\n├ ○ /booking/failed\n├ ○ /booking/success\n├ ○ /cart\n├ ○ /checkout\n├ ○ /contact\n├ ○ /gallery\n├ ○ /order/failed\n├ ○ /order/success\n├ ○ /privacy\n├ ○ /refund-policy\n├ ○ /robots.txt\n├ ○ /services\n├ ○ /shop\n├ ƒ /shop/[slug]\n├ ○ /sitemap.xml\n└ ○ /terms\n\n\n○  (Static)   prerendered as static content\nƒ  (Dynamic)  server-rendered on demand\n\n",
       "stderr": ""
     },
     {
@@ -37,11 +37,11 @@
         "verify:runtime"
       ],
       "definitionFile": "package.json",
-      "startedAt": "2026-08-27T23:24:57.375Z",
-      "finishedAt": "2026-08-27T23:25:02.116Z",
+      "startedAt": "2026-08-28T11:54:13.736Z",
+      "finishedAt": "2026-08-28T11:54:26.594Z",
       "exitCode": 0,
       "stdout": "\n> ades-aesthetics@0.1.0 verify:runtime\n> node scripts/verify-runtime.mjs\n\nPASS booking page renders\nPASS admin data fails closed without a session\nPASS admin management APIs reject unauthenticated requests\nPASS invalid booking checkout returns a safe validation error\nPASS development Convex deployment serves booking data\nPASS development Convex deployment denies invalid admin sessions\nEvidence: /Users/victorugboma/Desktop/Testing/ades-aesthetics/evidence/flows/F2_Booking/runtime-proof.json\nMigration evidence: /Users/victorugboma/Desktop/Testing/ades-aesthetics/evidence/flows/F2_Booking/migration-state.json\n",
-      "stderr": "(node:75571) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/victorugboma/Desktop/Testing/ades-aesthetics/convex/_generated/api.js is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /Users/victorugboma/Desktop/Testing/ades-aesthetics/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+      "stderr": "(node:35981) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/victorugboma/Desktop/Testing/ades-aesthetics/convex/_generated/api.js is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /Users/victorugboma/Desktop/Testing/ades-aesthetics/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
     }
   ]
 }
