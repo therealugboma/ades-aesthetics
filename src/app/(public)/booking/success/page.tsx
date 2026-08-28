@@ -1,62 +1,31 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
+import { usePaymentStatus } from "@/hooks/use-payment-status";
 
 function BookingSuccessContent() {
   const searchParams = useSearchParams();
   const ref = searchParams.get("ref");
-  const [booking, setBooking] = useState<{
-    reference: string;
-    amount: number;
-    status: string;
-    customerName: string;
-    serviceName: string;
-    serviceOptionLabel?: string;
-    totalAmount: number;
-    depositPercentage: number;
-  } | null>(null);
-  const [loading, setLoading] = useState(Boolean(ref));
-  const [verificationError, setVerificationError] = useState("");
-
-  useEffect(() => {
-    if (!ref) return;
-
-    const timer = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/payment/status?ref=${encodeURIComponent(ref)}`);
-        const data = await res.json();
-        if (res.ok && data.payment) {
-          setBooking({
-            reference: data.payment.reference,
-            amount: data.payment.amount,
-            status: data.payment.status,
-            customerName: data.payment.metadata?.customerName || "Customer",
-            serviceName: data.payment.metadata?.serviceName || "Service",
-            serviceOptionLabel: data.payment.metadata?.serviceOptionLabel,
-            totalAmount: data.payment.metadata?.totalAmount || 0,
-            depositPercentage: data.payment.metadata?.depositPercentage || 30,
-          });
-        } else {
-          setVerificationError(
-            data.error || "We could not find this payment reference."
-          );
-        }
-      } catch {
-        setVerificationError(
-          "We could not verify the payment yet. Your bank may still be processing it."
-        );
-      } finally {
-        setLoading(false);
-      }
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [ref]);
-
-  const isConfirmed = booking?.status === "success";
+  const { payment, verifying, error, retry } = usePaymentStatus(ref);
+  const metadata = payment?.metadata ?? {};
+  const customerName =
+    typeof metadata.customerName === "string" ? metadata.customerName : "Customer";
+  const serviceName =
+    typeof metadata.serviceName === "string" ? metadata.serviceName : "Service";
+  const serviceOptionLabel =
+    typeof metadata.serviceOptionLabel === "string"
+      ? metadata.serviceOptionLabel
+      : undefined;
+  const totalAmount =
+    typeof metadata.totalAmount === "number" ? metadata.totalAmount : 0;
+  const depositPercentage =
+    typeof metadata.depositPercentage === "number"
+      ? metadata.depositPercentage
+      : 30;
+  const isConfirmed = payment?.status === "success";
 
   return (
     <main className="flex-1 bg-gray-50">
@@ -80,19 +49,19 @@ function BookingSuccessContent() {
             </svg>
           </div>
           <h1 className="mt-8 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            {loading
+            {verifying
               ? "Verifying Your Payment…"
               : isConfirmed
                 ? "Booking Confirmed!"
-                : "Payment Verification Pending"}
+                : "Payment Status"}
           </h1>
           <p className="mt-4 text-lg text-gray-600">
             {isConfirmed
-              ? `Thank you for choosing Ades Aesthetics. Your deposit of ${formatPrice(booking.amount)} has been received and your appointment is confirmed.`
-              : loading
-                ? "Please wait while we confirm your payment securely with Paystack."
-                : verificationError ||
-                  "Your payment has not been confirmed yet. Please refresh in a moment or contact us with your reference."}
+              ? `Thank you for choosing Ades Aesthetics. Your deposit of ${formatPrice(payment.amount)} has been received and your appointment is confirmed.`
+              : verifying
+                ? "Paystack is finalizing your payment. This page will update automatically."
+                : error ||
+                  "Paystack has not returned a completed payment yet. You can check again without making another payment."}
           </p>
         </div>
 
@@ -107,33 +76,33 @@ function BookingSuccessContent() {
                 {ref || "—"}
               </dd>
             </div>
-            {booking && !loading ? (
+            {payment ? (
               <>
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">Customer</dt>
                   <dd className="text-sm font-medium text-gray-900">
-                    {booking.customerName}
+                    {customerName}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-sm text-gray-500">Service</dt>
                   <dd className="text-right text-sm font-medium text-gray-900">
-                    {booking.serviceName}
-                    {booking.serviceOptionLabel ? ` — ${booking.serviceOptionLabel}` : ""}
+                    {serviceName}
+                    {serviceOptionLabel ? ` — ${serviceOptionLabel}` : ""}
                   </dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">
-                    Deposit ({booking.depositPercentage}%)
+                    Deposit ({depositPercentage}%)
                   </dt>
                   <dd className="text-sm font-bold text-rose-600">
-                    {formatPrice(booking.amount)}
+                    {formatPrice(payment.amount)}
                   </dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">Total Service</dt>
                   <dd className="text-sm font-medium text-gray-900">
-                    {formatPrice(booking.totalAmount)}
+                    {formatPrice(totalAmount)}
                   </dd>
                 </div>
                 <div className="flex justify-between">
@@ -141,7 +110,7 @@ function BookingSuccessContent() {
                   <dd className={`text-sm font-medium capitalize ${
                     isConfirmed ? "text-green-600" : "text-amber-600"
                   }`}>
-                    {booking.status}
+                    {payment.status}
                   </dd>
                 </div>
               </>
@@ -180,18 +149,18 @@ function BookingSuccessContent() {
             </li>
           </ul>
         </div>
-        ) : !loading ? (
+        ) : !verifying ? (
           <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
             <p className="font-semibold">Do not make another payment yet.</p>
             <p className="mt-2">
-              Refresh the status first. If it is still pending, contact us with reference {ref || "—"} so we can confirm it safely.
+              Paystack will confirm a completed payment automatically. Use the button below to check reference {ref || "—"} again.
             </p>
             <button
               type="button"
-              onClick={() => window.location.reload()}
+              onClick={retry}
               className="mt-4 rounded-full bg-amber-700 px-5 py-2 font-semibold text-white hover:bg-amber-800"
             >
-              Refresh Payment Status
+              Check Payment Status Again
             </button>
           </div>
         ) : null}

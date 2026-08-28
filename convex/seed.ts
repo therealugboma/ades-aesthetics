@@ -251,15 +251,12 @@ export const seed = mutation({
     }
 
     const galleryImages = [
-      { url: "/images/gallery/classic-manicure.jpg", alt: "Classic manicure result", category: "nails" as const, isFeatured: true, sortOrder: 1 },
-      { url: "/images/gallery/gel-nails-pink.jpg", alt: "Pink gel nails", category: "nails" as const, isFeatured: true, sortOrder: 2 },
-      { url: "/images/gallery/acrylic-nail-art.jpg", alt: "Custom acrylic nail art", category: "nails" as const, isFeatured: false, sortOrder: 3 },
-      { url: "/images/gallery/classic-lashes.jpg", alt: "Classic lash extensions", category: "lashes" as const, isFeatured: true, sortOrder: 4 },
-      { url: "/images/gallery/volume-lashes.jpg", alt: "Volume lash extensions", category: "lashes" as const, isFeatured: true, sortOrder: 5 },
-      { url: "/images/gallery/lash-lift.jpg", alt: "Lash lift and tint result", category: "lashes" as const, isFeatured: false, sortOrder: 6 },
-      { url: "/images/gallery/brow-shaping.jpg", alt: "Freshly shaped brows", category: "brows" as const, isFeatured: true, sortOrder: 7 },
-      { url: "/images/gallery/brow-tint.jpg", alt: "Brow tinting result", category: "brows" as const, isFeatured: false, sortOrder: 8 },
-      { url: "/images/gallery/studio-interior.jpg", alt: "Ades Aesthetics studio interior", category: "all" as const, isFeatured: true, sortOrder: 9 },
+      { url: "/services/premium/gel-french-pink.webp", alt: "Gel manicure artwork", category: "nails" as const, isFeatured: true, sortOrder: 1 },
+      { url: "/services/premium/biab-yellow-pattern.webp", alt: "BIAB nail pattern", category: "nails" as const, isFeatured: true, sortOrder: 2 },
+      { url: "/services/premium/acrylic-long.webp", alt: "Acrylic nail design", category: "nails" as const, isFeatured: true, sortOrder: 3 },
+      { url: "/services/premium/classic-lashes.webp", alt: "Classic lash extensions", category: "lashes" as const, isFeatured: true, sortOrder: 4 },
+      { url: "/services/premium/hybrid-lashes-front.webp", alt: "Hybrid lash extensions", category: "lashes" as const, isFeatured: true, sortOrder: 5 },
+      { url: "/services/premium/wispy-lashes-portrait.webp", alt: "Wispy lash extensions", category: "lashes" as const, isFeatured: true, sortOrder: 6 },
     ];
 
     for (const img of galleryImages) {

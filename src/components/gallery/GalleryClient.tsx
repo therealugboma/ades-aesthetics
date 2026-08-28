@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
 import GalleryGrid from "./GalleryGrid";
 import GalleryFilter from "./GalleryFilter";
+import { premiumGalleryImages } from "@/lib/gallery-images";
 
 type Category = "nails" | "lashes" | "brows" | "skin" | "all";
 
@@ -15,15 +16,24 @@ export default function GalleryClient() {
     activeCategory === "all" ? {} : { category: activeCategory }
   );
 
-  if (images === undefined) {
-    return (
-      <div className="columns-2 gap-4 sm:columns-3 lg:columns-4">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="mb-4 h-48 animate-pulse rounded-xl bg-gray-100" />
-        ))}
-      </div>
-    );
-  }
+  const fallbackImages = premiumGalleryImages
+    .filter(
+      (image) =>
+        activeCategory === "all" || image.category === activeCategory
+    )
+    .map((image) => ({
+      _id: `fallback-${image.src}`,
+      url: image.src,
+      alt: image.alt,
+      category: image.category,
+      isFeatured: true,
+    }));
+  const uploadedImages = images?.filter(
+    (image) => !image.url.startsWith("/images/gallery/")
+  );
+  const displayImages = uploadedImages?.length
+    ? uploadedImages
+    : fallbackImages;
 
   return (
     <>
@@ -33,7 +43,7 @@ export default function GalleryClient() {
         onCategoryChange={(cat) => setActiveCategory(cat as Category)}
       />
       <div className="mt-8">
-        <GalleryGrid images={images} />
+        <GalleryGrid images={displayImages} />
       </div>
     </>
   );

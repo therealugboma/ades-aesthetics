@@ -1,66 +1,39 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
-
-interface OrderDetails {
-  reference: string;
-  amount: number;
-  status: string;
-  customerName: string;
-  deliveryAddress: string;
-  itemCount: number;
-}
+import { usePaymentStatus } from "@/hooks/use-payment-status";
 
 function OrderSuccessContent() {
   const searchParams = useSearchParams();
   const ref = searchParams.get("ref");
-  const [order, setOrder] = useState<OrderDetails | null>(null);
-  const [loading, setLoading] = useState(Boolean(ref));
-
-  useEffect(() => {
-    if (!ref) return;
-
-    const timer = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/payment/status?ref=${encodeURIComponent(ref)}`);
-        const data = await res.json();
-        if (res.ok && data.payment) {
-          setOrder({
-            reference: data.payment.reference,
-            amount: data.payment.amount,
-            status: data.payment.status,
-            customerName: data.payment.metadata?.customerName || "Customer",
-            deliveryAddress: data.payment.metadata?.deliveryAddress || "",
-            itemCount: data.payment.orderItems?.length || 0,
-          });
-        }
-      } catch {
-        // Payment might still be processing
-      } finally {
-        setLoading(false);
-      }
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [ref]);
+  const { payment, verifying, error, retry } = usePaymentStatus(ref);
+  const isConfirmed = payment?.status === "success";
+  const deliveryAddress =
+    typeof payment?.metadata.deliveryAddress === "string"
+      ? payment.metadata.deliveryAddress
+      : "";
 
   return (
     <main className="flex-1 bg-gray-50">
       <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
         <div className="text-center">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
-            <svg className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <div className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full ${isConfirmed ? "bg-green-100" : "bg-amber-100"}`}>
+            <svg className={`h-10 w-10 ${isConfirmed ? "text-green-600" : "text-amber-600"}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
             </svg>
           </div>
           <h1 className="mt-8 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            Order Confirmed!
+            {verifying ? "Verifying Your Payment…" : isConfirmed ? "Order Confirmed!" : "Payment Status"}
           </h1>
           <p className="mt-4 text-lg text-gray-600">
-            Thank you for your purchase. We&apos;re preparing your order now.
+            {isConfirmed
+              ? "Thank you for your purchase. We’re preparing your order now."
+              : verifying
+                ? "Paystack is finalizing your payment. This page will update automatically."
+                : error || "Paystack has not returned a completed payment yet."}
           </p>
         </div>
 
@@ -71,19 +44,19 @@ function OrderSuccessContent() {
               <dt className="text-sm text-gray-500">Reference</dt>
               <dd className="text-sm font-medium text-gray-900">{ref || "#AD-00000"}</dd>
             </div>
-            {!loading && order ? (
+            {payment ? (
               <>
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">Items</dt>
-                  <dd className="text-sm font-medium text-gray-900">{order.itemCount} items</dd>
+                  <dd className="text-sm font-medium text-gray-900">{payment.orderItems ?? 0} items</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">Total Paid</dt>
-                  <dd className="text-sm font-bold text-rose-600">{formatPrice(order.amount)}</dd>
+                  <dd className="text-sm font-bold text-rose-600">{formatPrice(payment.amount)}</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">Status</dt>
-                  <dd className="text-sm font-medium text-green-600 capitalize">{order.status}</dd>
+                  <dd className={`text-sm font-medium capitalize ${isConfirmed ? "text-green-600" : "text-amber-600"}`}>{payment.status}</dd>
                 </div>
               </>
             ) : (
@@ -91,13 +64,13 @@ function OrderSuccessContent() {
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">Items</dt>
                   <dd className="text-sm font-medium text-gray-900">
-                    {loading ? <span className="inline-block h-4 w-12 animate-pulse rounded bg-gray-200" /> : "—"}
+                    {verifying ? <span className="inline-block h-4 w-12 animate-pulse rounded bg-gray-200" /> : "—"}
                   </dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">Total Paid</dt>
                   <dd className="text-sm font-bold text-rose-600">
-                    {loading ? <span className="inline-block h-4 w-16 animate-pulse rounded bg-gray-200" /> : "—"}
+                    {verifying ? <span className="inline-block h-4 w-16 animate-pulse rounded bg-gray-200" /> : "—"}
                   </dd>
                 </div>
               </>
@@ -105,17 +78,25 @@ function OrderSuccessContent() {
           </dl>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-6">
+        {isConfirmed ? <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-6">
           <h3 className="text-base font-semibold text-blue-900">Delivery Information</h3>
           <p className="mt-2 text-sm text-blue-800">
             Your order will be delivered within 2-3 business days. You will receive a tracking link via email once your order is dispatched.
           </p>
-          {order?.deliveryAddress && (
+          {deliveryAddress && (
             <p className="mt-2 text-sm text-blue-800">
-              <span className="font-medium">Address:</span> {order.deliveryAddress}
+              <span className="font-medium">Address:</span> {deliveryAddress}
             </p>
           )}
-        </div>
+        </div> : !verifying ? (
+          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
+            <p className="font-semibold">Do not make another payment yet.</p>
+            <p className="mt-2">Paystack will confirm a completed payment automatically.</p>
+            <button type="button" onClick={retry} className="mt-4 rounded-full bg-amber-700 px-5 py-2 font-semibold text-white hover:bg-amber-800">
+              Check Payment Status Again
+            </button>
+          </div>
+        ) : null}
 
         <div className="mt-10 text-center">
           <Link

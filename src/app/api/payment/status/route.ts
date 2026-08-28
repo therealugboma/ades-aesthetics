@@ -51,10 +51,11 @@ export async function GET(request: NextRequest) {
           reference,
         });
       } catch (error) {
-        console.warn(
-          "Payment is not verified yet:",
-          error instanceof Error ? error.message : "Unknown verification error"
-        );
+        console.error("Payment finalization failed", {
+          reference,
+          message:
+            error instanceof Error ? error.message : "Unknown verification error",
+        });
       }
     }
 
@@ -62,15 +63,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
 
-    return NextResponse.json({
-      payment: {
-        reference: payment.reference,
-        amount: payment.amount,
-        status: payment.status,
-        orderItems: payment.orderItems,
-        metadata: parseMetadata(payment.metadata),
+    return NextResponse.json(
+      {
+        payment: {
+          reference: payment.reference,
+          amount: payment.amount,
+          status: payment.status,
+          orderItems: payment.orderItems,
+          metadata: parseMetadata(payment.metadata),
+        },
       },
-    });
+      { headers: { "Cache-Control": "no-store, max-age=0" } }
+    );
   } catch (error) {
     console.error(
       "Payment status failed:",

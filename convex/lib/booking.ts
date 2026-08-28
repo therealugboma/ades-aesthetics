@@ -45,13 +45,13 @@ export function appointmentBlocksAvailability(
 }
 
 export function reservationCanFinalize(
-  appointment: { status: string; createdAt: number; expiresAt?: number },
-  now: number
+  appointment: { status: string; createdAt: number; expiresAt?: number }
 ): boolean {
   if (appointment.status === "confirmed") return true;
-  const expiresAt =
-    appointment.expiresAt ?? appointment.createdAt + RESERVATION_TTL_MS;
-  return appointment.status === "pending" && expiresAt > now;
+  // The hold expiry only decides whether an *unpaid* reservation blocks new
+  // availability. Once Paystack has verified the exact amount and currency,
+  // a delayed callback/webhook must still be able to confirm the reservation.
+  return appointment.status === "pending";
 }
 
 export function intervalsOverlapWithBuffer(

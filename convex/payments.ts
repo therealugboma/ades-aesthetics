@@ -98,11 +98,10 @@ async function finalizePayment(ctx: MutationCtx, args: VerifiedPayment) {
   }
   if (payment.appointmentId) {
     const appointment = await ctx.db.get(payment.appointmentId);
-    if (!appointment || !reservationCanFinalize(appointment, Date.now())) {
+    if (!appointment || !reservationCanFinalize(appointment)) {
       throw new ConvexError({
-        code: "RESERVATION_EXPIRED",
-        message:
-          "This appointment reservation expired before payment confirmation.",
+        code: "RESERVATION_UNAVAILABLE",
+        message: "This appointment can no longer be confirmed.",
       });
     }
   }

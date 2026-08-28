@@ -72,28 +72,26 @@ test("available slot generation excludes conflicts and services that run past cl
   assert.deepEqual(slots, ["10:30"]);
 });
 
-test("payment finalization only accepts active reservations or confirmed bookings", () => {
+test("verified payment finalization accepts pending reservations even after the hold expires", () => {
   const now = Date.now();
   assert.equal(
     reservationCanFinalize(
-      { status: "pending", createdAt: now, expiresAt: now + 1 },
-      now
+      { status: "pending", createdAt: now, expiresAt: now + 1 }
     ),
     true
   );
   assert.equal(
     reservationCanFinalize(
-      { status: "pending", createdAt: now, expiresAt: now },
-      now
+      { status: "pending", createdAt: now, expiresAt: now }
     ),
+    true
+  );
+  assert.equal(
+    reservationCanFinalize({ status: "cancelled", createdAt: now }),
     false
   );
   assert.equal(
-    reservationCanFinalize({ status: "cancelled", createdAt: now }, now),
-    false
-  );
-  assert.equal(
-    reservationCanFinalize({ status: "confirmed", createdAt: now }, now),
+    reservationCanFinalize({ status: "confirmed", createdAt: now }),
     true
   );
 });

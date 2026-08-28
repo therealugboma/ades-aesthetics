@@ -57,10 +57,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error(
-      "Paystack webhook failed:",
-      error instanceof Error ? error.message : "Unknown error"
-    );
+    console.error("Paystack webhook failed", {
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
     return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
   }
 }

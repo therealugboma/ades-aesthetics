@@ -27,11 +27,19 @@ export async function verifyPaystackTransaction(reference: string) {
       method: "GET",
       headers: { Authorization: `Bearer ${secretKey}` },
       cache: "no-store",
+      signal: AbortSignal.timeout(10_000),
     }
   );
   const result = (await response.json()) as PaystackVerification;
   if (!response.ok || !result.status || !result.data) {
     throw new Error(result.message || "Failed to verify transaction");
+  }
+  if (
+    typeof result.data.status !== "string" ||
+    !Number.isFinite(result.data.amount) ||
+    typeof result.data.currency !== "string"
+  ) {
+    throw new Error("Paystack returned an invalid verification response");
   }
   return result.data;
 }

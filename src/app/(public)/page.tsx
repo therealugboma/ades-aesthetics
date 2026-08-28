@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { HomeServices, HomeProducts } from "@/components/home/HomeContent";
+import { premiumGalleryImages } from "@/lib/gallery-images";
 
 export const metadata: Metadata = {
   title: "Ades Aesthetics | Premium Beauty Services in Lagos",
@@ -34,15 +35,6 @@ const features = [
       "Unwind in our luxurious salon designed for your comfort and peace of mind.",
     icon: "M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z",
   },
-];
-
-const galleryImages = [
-  { src: "/services/premium/gel-french-pink.webp", alt: "Gel manicure artwork", category: "nails" },
-  { src: "/services/premium/wispy-lashes-portrait.webp", alt: "Lash extensions", category: "lashes" },
-  { src: "/services/premium/biab-yellow-pattern.webp", alt: "BIAB nail pattern", category: "nails" },
-  { src: "/services/premium/hybrid-lashes-front.webp", alt: "Hybrid lashes", category: "lashes" },
-  { src: "/services/premium/acrylic-long.webp", alt: "Acrylic nail design", category: "nails" },
-  { src: "/services/premium/classic-lashes.webp", alt: "Classic lashes", category: "lashes" },
 ];
 
 const testimonials = [
@@ -169,9 +161,9 @@ export default function HomePage() {
               </p>
             </div>
             <div className="mt-12 columns-2 gap-4 sm:columns-3 lg:columns-3">
-              {galleryImages.map((img, index) => (
+              {premiumGalleryImages.map((img) => (
                 <div
-                  key={index}
+                  key={img.src}
                   className="mb-4 break-inside-avoid overflow-hidden rounded-xl"
                 >
                   <Image
@@ -180,6 +172,7 @@ export default function HomePage() {
                     width={800}
                     height={1000}
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 33vw"
+                    quality={75}
                     className="aspect-[3/4] h-auto w-full object-cover"
                   />
                 </div>
