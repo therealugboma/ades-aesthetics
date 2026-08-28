@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { HomeServices, HomeProducts } from "@/components/home/HomeContent";
 
@@ -36,12 +37,12 @@ const features = [
 ];
 
 const galleryImages = [
-  { src: "/gallery/nails-1.jpg", alt: "Gel manicure artwork", category: "nails" },
-  { src: "/gallery/lashes-1.jpg", alt: "Lash extensions", category: "lashes" },
-  { src: "/gallery/brows-1.jpg", alt: "Microblading brows", category: "brows" },
-  { src: "/gallery/skin-1.jpg", alt: "Facial treatment", category: "skin" },
-  { src: "/gallery/nails-2.jpg", alt: "Nail art design", category: "nails" },
-  { src: "/gallery/lashes-2.jpg", alt: "Volume lashes", category: "lashes" },
+  { src: "/services/premium/gel-french-pink.webp", alt: "Gel manicure artwork", category: "nails" },
+  { src: "/services/premium/wispy-lashes-portrait.webp", alt: "Lash extensions", category: "lashes" },
+  { src: "/services/premium/biab-yellow-pattern.webp", alt: "BIAB nail pattern", category: "nails" },
+  { src: "/services/premium/hybrid-lashes-front.webp", alt: "Hybrid lashes", category: "lashes" },
+  { src: "/services/premium/acrylic-long.webp", alt: "Acrylic nail design", category: "nails" },
+  { src: "/services/premium/classic-lashes.webp", alt: "Classic lashes", category: "lashes" },
 ];
 
 const testimonials = [
@@ -173,7 +174,14 @@ export default function HomePage() {
                   key={index}
                   className="mb-4 break-inside-avoid overflow-hidden rounded-xl"
                 >
-                  <div className="aspect-[3/4] w-full bg-gradient-to-br from-pink-200 to-rose-100" />
+                  <Image
+                    src={img.src}
+                    alt={img.alt}
+                    width={800}
+                    height={1000}
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 33vw"
+                    className="aspect-[3/4] h-auto w-full object-cover"
+                  />
                 </div>
               ))}
             </div>
