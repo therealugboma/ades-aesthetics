@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     if (!sessionToken) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
-    const { customerId, serviceId, date, time, notes } = await request.json();
+    const { customerId, serviceId, date, time, serviceOptionLabel, notes } = await request.json();
 
     if (!customerId || !serviceId || !date || !time) {
       return NextResponse.json(
@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
       serviceId,
       date,
       time,
+      serviceOptionLabel,
       notes,
     });
 

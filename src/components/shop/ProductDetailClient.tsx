@@ -14,6 +14,7 @@ export default function ProductDetailClient() {
   const slug = params.slug as string;
   const product = useQuery(api.products.getBySlug, { slug });
   const [quantity, setQuantity] = useState(1);
+  const [activeImage, setActiveImage] = useState(0);
   const [cartOpen, setCartOpen] = useState(false);
   const items = useCartStore((s) => s.items);
   const addItem = useCartStore((s) => s.addItem);
@@ -48,13 +49,20 @@ export default function ProductDetailClient() {
     );
   }
 
+  const productImages = product.imageUrls?.length
+    ? product.imageUrls
+    : product.imageUrl
+      ? [product.imageUrl]
+      : [];
+  const coverImage = productImages[0] || product.imageUrl;
+
   const handleAddToCart = () => {
     addItem({
       productId: product._id,
       name: product.name,
       slug: product.slug,
       price: product.price,
-      imageUrl: product.imageUrl,
+      imageUrl: coverImage,
       stock: product.stock,
     });
     setCartOpen(true);
@@ -85,9 +93,26 @@ export default function ProductDetailClient() {
         </nav>
 
         <div className="grid gap-8 lg:grid-cols-2">
-          <div className="aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-amber-100 to-rose-50">
-            {product.imageUrl && (
-              <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
+          <div>
+            <div className="aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-amber-100 to-rose-50">
+              {productImages[activeImage] && (
+                <img src={productImages[activeImage]} alt={`${product.name} view ${activeImage + 1}`} className="h-full w-full object-cover" />
+              )}
+            </div>
+            {productImages.length > 1 && (
+              <div className="mt-3 grid grid-cols-5 gap-2">
+                {productImages.map((image, index) => (
+                  <button
+                    key={`${image}-${index}`}
+                    type="button"
+                    onClick={() => setActiveImage(index)}
+                    className={`aspect-square overflow-hidden rounded-lg border-2 ${index === activeImage ? "border-rose-600" : "border-transparent hover:border-rose-200"}`}
+                    aria-label={`Show product picture ${index + 1}`}
+                  >
+                    <img src={image} alt="" className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 

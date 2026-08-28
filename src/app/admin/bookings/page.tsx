@@ -62,7 +62,10 @@ export default function AdminBookingsPage() {
               filtered?.map((a: any) => (
                 <tr key={a._id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-900">{a.customer?.name ?? "Unknown"}</td>
-                  <td className="px-4 py-3 text-gray-700">{a.service?.name ?? "Unknown"}</td>
+                  <td className="px-4 py-3 text-gray-700">
+                    <span className="block">{a.service?.name ?? "Unknown"}</span>
+                    {a.serviceOptionLabel && <span className="text-xs text-gray-500">{a.serviceOptionLabel}</span>}
+                  </td>
                   <td className="px-4 py-3 text-gray-500">{a.date} {a.time}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2 py-1 text-xs font-medium ${

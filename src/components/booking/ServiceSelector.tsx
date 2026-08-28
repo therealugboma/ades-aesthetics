@@ -1,7 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { formatPrice, formatDuration } from "@/lib/formatters";
+import { formatDuration } from "@/lib/formatters";
+import { getServicePriceLabel, type ServicePriceOption } from "@/lib/service-pricing";
 
 interface Service {
   _id: string;
@@ -10,6 +11,7 @@ interface Service {
   price: number;
   duration: number;
   category: string;
+  priceOptions?: ServicePriceOption[];
 }
 
 interface ServiceSelectorProps {
@@ -52,7 +54,7 @@ export default function ServiceSelector({
             </p>
             <div className="mt-3 flex items-center gap-3">
               <span className="text-sm font-semibold text-rose-gold">
-                {formatPrice(service.price)}
+                {getServicePriceLabel(service)}
               </span>
               <span className="text-xs text-muted">
                 {formatDuration(service.duration)}

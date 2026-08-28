@@ -13,6 +13,8 @@ function BookingSuccessContent() {
     amount: number;
     status: string;
     customerName: string;
+    serviceName: string;
+    serviceOptionLabel?: string;
     totalAmount: number;
     depositPercentage: number;
   } | null>(null);
@@ -32,6 +34,8 @@ function BookingSuccessContent() {
             amount: data.payment.amount,
             status: data.payment.status,
             customerName: data.payment.metadata?.customerName || "Customer",
+            serviceName: data.payment.metadata?.serviceName || "Service",
+            serviceOptionLabel: data.payment.metadata?.serviceOptionLabel,
             totalAmount: data.payment.metadata?.totalAmount || 0,
             depositPercentage: data.payment.metadata?.depositPercentage || 30,
           });
@@ -109,6 +113,13 @@ function BookingSuccessContent() {
                   <dt className="text-sm text-gray-500">Customer</dt>
                   <dd className="text-sm font-medium text-gray-900">
                     {booking.customerName}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-sm text-gray-500">Service</dt>
+                  <dd className="text-right text-sm font-medium text-gray-900">
+                    {booking.serviceName}
+                    {booking.serviceOptionLabel ? ` — ${booking.serviceOptionLabel}` : ""}
                   </dd>
                 </div>
                 <div className="flex justify-between">

@@ -21,6 +21,35 @@ function bookingError(code: BookingErrorCode, message: string): never {
   throw new ConvexError({ code, message });
 }
 
+function resolveServicePrice(
+  service: {
+    price: number;
+    priceOptions?: Array<{ label: string; price: number }>;
+  },
+  requestedLabel?: string
+) {
+  const priceOptions = service.priceOptions ?? [];
+  if (priceOptions.length === 0) {
+    return { price: service.price, label: undefined };
+  }
+
+  const normalizedLabel = requestedLabel?.trim().toLowerCase();
+  const selectedOption = priceOptions.find(
+    (option) => option.label.trim().toLowerCase() === normalizedLabel
+  );
+  if (!selectedOption) {
+    bookingError(
+      "INVALID_BOOKING",
+      "Please choose a valid service price option before continuing."
+    );
+  }
+
+  return {
+    price: selectedOption.price,
+    label: selectedOption.label,
+  };
+}
+
 async function validateSlot(
   ctx: MutationCtx,
   args: { serviceId: Id<"services">; date: string; time: string },
@@ -106,16 +135,18 @@ export const create = mutation({
     serviceId: v.id("services"),
     date: v.string(),
     time: v.string(),
+    serviceOptionLabel: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.sessionToken);
     const now = Date.now();
     const service = await validateSlot(ctx, args, now);
+    const selectedPricing = resolveServicePrice(service, args.serviceOptionLabel);
 
     const depositPercentage = await getSetting(ctx, "deposit_percentage");
     const depositAmount = Math.max(
-      Math.round(service.price * (parseFloat(depositPercentage) / 100)),
+      Math.round(selectedPricing.price * (parseFloat(depositPercentage) / 100)),
       1
     );
 
@@ -126,7 +157,9 @@ export const create = mutation({
       time: args.time,
       status: "pending",
       depositAmount,
-      totalAmount: service.price,
+      totalAmount: selectedPricing.price,
+      serviceOptionLabel: selectedPricing.label,
+      serviceOptionPrice: selectedPricing.label ? selectedPricing.price : undefined,
       notes: args.notes,
       expiresAt: now + RESERVATION_TTL_MS,
       createdAt: now,
@@ -142,6 +175,7 @@ export const createCheckout = mutation({
     name: v.string(),
     email: v.string(),
     phone: v.string(),
+    serviceOptionLabel: v.optional(v.string()),
     notes: v.optional(v.string()),
     reference: v.string(),
   },
@@ -166,13 +200,14 @@ export const createCheckout = mutation({
     }
 
     const service = await validateSlot(ctx, args, now);
+    const selectedPricing = resolveServicePrice(service, args.serviceOptionLabel);
     const depositSetting = Number(await getSetting(ctx, "deposit_percentage"));
     if (!Number.isFinite(depositSetting) || depositSetting <= 0 || depositSetting > 100) {
       throw new Error("Invalid deposit_percentage business setting");
     }
 
     const depositAmount = Math.max(
-      Math.round(service.price * (depositSetting / 100)),
+      Math.round(selectedPricing.price * (depositSetting / 100)),
       1
     );
 
@@ -202,7 +237,9 @@ export const createCheckout = mutation({
       time: args.time,
       status: "pending",
       depositAmount,
-      totalAmount: service.price,
+      totalAmount: selectedPricing.price,
+      serviceOptionLabel: selectedPricing.label,
+      serviceOptionPrice: selectedPricing.label ? selectedPricing.price : undefined,
       notes: args.notes?.trim() || undefined,
       expiresAt,
       createdAt: now,
@@ -219,10 +256,11 @@ export const createCheckout = mutation({
         customerEmail: email,
         customerPhone: phone,
         appointmentId,
-        totalAmount: service.price,
+        totalAmount: selectedPricing.price,
         depositAmount,
         depositPercentage: depositSetting,
         serviceName: service.name,
+        serviceOptionLabel: selectedPricing.label,
         date: args.date,
         time: args.time,
       }),
@@ -232,7 +270,7 @@ export const createCheckout = mutation({
     return {
       appointmentId,
       amount: depositAmount,
-      totalAmount: service.price,
+      totalAmount: selectedPricing.price,
       depositPercentage: depositSetting,
       expiresAt,
     };

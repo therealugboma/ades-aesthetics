@@ -2,7 +2,13 @@
 
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "convex/_generated/api";
-import { useState, useRef } from "react";
+import type { Doc, Id } from "convex/_generated/dataModel";
+import { useState } from "react";
+import MultiImageManager, {
+  existingManagedImages,
+  releaseManagedImagePreviews,
+  type ManagedImage,
+} from "@/components/admin/MultiImageManager";
 import { useAdminAuth } from "@/lib/admin-auth-context";
 
 interface ProductForm {
@@ -37,39 +43,28 @@ export default function AdminProductsPage() {
 
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState<any>(null);
+  const [editing, setEditing] = useState<Doc<"products"> | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState("");
+  const [images, setImages] = useState<ManagedImage[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const filtered = search
-    ? products?.filter((p: any) => p.name.toLowerCase().includes(search.toLowerCase()))
+    ? products?.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
     : products;
 
   const slugify = (text: string) =>
     text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) {
-      setFile(f);
-      setPreview(URL.createObjectURL(f));
-    }
-  };
-
   const openAdd = () => {
     setEditing(null);
     setForm(emptyForm);
-    setFile(null);
-    setPreview("");
+    setImages([]);
     setError("");
     setShowModal(true);
   };
 
-  const openEdit = (p: any) => {
+  const openEdit = (p: Doc<"products">) => {
     setEditing(p);
     setForm({
       name: p.name,
@@ -80,10 +75,36 @@ export default function AdminProductsPage() {
       stock: String(p.stock),
       isFeatured: p.isFeatured || false,
     });
-    setFile(null);
-    setPreview(p.imageUrl || "");
+    setImages(existingManagedImages(p.imageUrls?.length ? p.imageUrls : p.imageUrl ? [p.imageUrl] : []));
     setError("");
     setShowModal(true);
+  };
+
+  const closeModal = () => {
+    releaseManagedImagePreviews(images);
+    setShowModal(false);
+    setEditing(null);
+    setForm(emptyForm);
+    setImages([]);
+    setError("");
+  };
+
+  const uploadImages = async () => {
+    return Promise.all(images.map(async (image) => {
+      if (image.kind === "existing") return image.url;
+      const uploadUrl = await generateUploadUrl({ sessionToken: sessionToken! });
+      const result = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": image.file.type },
+        body: image.file,
+      });
+      if (!result.ok) throw new Error(`Could not upload ${image.file.name}`);
+      const { storageId } = (await result.json()) as { storageId?: string };
+      if (!storageId) throw new Error(`Upload failed for ${image.file.name}`);
+      const url = await getStorageUrl({ sessionToken: sessionToken!, storageId });
+      if (!url) throw new Error(`Could not save ${image.file.name}`);
+      return url;
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,21 +112,8 @@ export default function AdminProductsPage() {
     setError("");
     setSaving(true);
     try {
-      let imageUrl = editing?.imageUrl || "";
-
-      if (file) {
-        const uploadUrl = await generateUploadUrl({ sessionToken: sessionToken! });
-        const result = await fetch(uploadUrl, {
-          method: "POST",
-          headers: { "Content-Type": file.type },
-          body: file,
-        });
-        const { storageId } = await result.json();
-        imageUrl = await getStorageUrl({
-          sessionToken: sessionToken!,
-          storageId: storageId as string,
-        });
-      }
+      const imageUrls = await uploadImages();
+      if (imageUrls.length === 0) throw new Error("Add at least one product picture");
 
       if (editing) {
         await updateProduct({
@@ -115,8 +123,9 @@ export default function AdminProductsPage() {
           slug: form.slug || slugify(form.name),
           description: form.description,
           price: Number(form.price),
-          categoryId: form.categoryId as any,
-          imageUrl,
+          categoryId: form.categoryId as Id<"productCategories">,
+          imageUrl: imageUrls[0],
+          imageUrls,
           stock: Number(form.stock),
           isFeatured: form.isFeatured,
         });
@@ -127,30 +136,27 @@ export default function AdminProductsPage() {
           slug: form.slug || slugify(form.name),
           description: form.description,
           price: Number(form.price),
-          categoryId: form.categoryId as any,
-          imageUrl,
+          categoryId: form.categoryId as Id<"productCategories">,
+          imageUrl: imageUrls[0],
+          imageUrls,
           stock: Number(form.stock),
           isFeatured: form.isFeatured,
         });
       }
-      setShowModal(false);
-      setForm(emptyForm);
-      setEditing(null);
-      setFile(null);
-      setPreview("");
-    } catch (err: any) {
-      setError(err.message || "Failed to save product");
+      closeModal();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save product");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (p: any) => {
+  const handleDelete = async (p: Doc<"products">) => {
     if (!confirm(`Deactivate "${p.name}"?`)) return;
     await deleteProduct({ sessionToken: sessionToken!, id: p._id });
   };
 
-  const handleToggleActive = async (p: any) => {
+  const handleToggleActive = async (p: Doc<"products">) => {
     await updateProduct({ sessionToken: sessionToken!, id: p._id, isActive: !p.isActive });
   };
 
@@ -173,38 +179,18 @@ export default function AdminProductsPage() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">
                 {editing ? "Edit Product" : "Add Product"}
               </h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
             </div>
 
             {error && <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Product Photo</label>
-                <input ref={fileRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                <button type="button" onClick={() => fileRef.current?.click()}
-                  className="w-full rounded-lg border-2 border-dashed border-gray-300 p-6 text-center hover:border-rose-400 hover:bg-rose-50/50 transition-colors">
-                  {preview ? (
-                    <div className="flex flex-col items-center gap-2">
-                      <img src={preview} alt="Preview" className="h-32 w-32 rounded-lg object-cover" />
-                      <span className="text-xs text-gray-500">Click to change</span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2">
-                      <svg className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                      </svg>
-                      <span className="text-sm text-gray-600 font-medium">Click to upload photo</span>
-                      <span className="text-xs text-gray-400">PNG, JPG, WEBP</span>
-                    </div>
-                  )}
-                </button>
-              </div>
+              <MultiImageManager label="Product pictures" images={images} onChange={setImages} />
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
@@ -249,7 +235,7 @@ export default function AdminProductsPage() {
                   onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
                   className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm">
                   <option value="">Select category</option>
-                  {categories?.map((c: any) => (
+                  {categories?.map((c) => (
                     <option key={c._id} value={c._id}>{c.name}</option>
                   ))}
                 </select>
@@ -263,7 +249,7 @@ export default function AdminProductsPage() {
               </label>
 
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)}
+                <button type="button" onClick={closeModal}
                   className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
                   Cancel
                 </button>
@@ -289,16 +275,16 @@ export default function AdminProductsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filtered?.map((p: any) => (
+            {filtered?.map((p) => (
               <tr key={p._id} className="hover:bg-gray-50">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs overflow-hidden">
-                      {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-full w-full object-cover" /> : "IMG"}
+                      {(p.imageUrls?.[0] || p.imageUrl) ? <img src={p.imageUrls?.[0] || p.imageUrl} alt="" className="h-full w-full object-cover" /> : "IMG"}
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">{p.name}</p>
-                      <p className="text-xs text-gray-500">{p.slug}</p>
+                      <p className="text-xs text-gray-500">{p.imageUrls?.length ?? (p.imageUrl ? 1 : 0)} picture{(p.imageUrls?.length ?? (p.imageUrl ? 1 : 0)) === 1 ? "" : "s"}</p>
                     </div>
                   </div>
                 </td>

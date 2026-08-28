@@ -2,6 +2,34 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "./helpers";
 
+const priceOptionValidator = v.object({
+  label: v.string(),
+  price: v.number(),
+});
+
+function validatePriceOptions(
+  price: number,
+  priceOptions: Array<{ label: string; price: number }> | undefined
+) {
+  if (!Number.isFinite(price) || price < 0) {
+    throw new Error("Service price must be a valid non-negative amount");
+  }
+  if (!priceOptions?.length) return;
+
+  const labels = new Set<string>();
+  for (const option of priceOptions) {
+    const label = option.label.trim();
+    if (!label || !Number.isFinite(option.price) || option.price < 0) {
+      throw new Error("Every price option needs a label and valid price");
+    }
+    const normalizedLabel = label.toLowerCase();
+    if (labels.has(normalizedLabel)) {
+      throw new Error("Price option labels must be unique");
+    }
+    labels.add(normalizedLabel);
+  }
+}
+
 export const list = query({
   args: {},
   handler: async (ctx) => {
@@ -47,10 +75,13 @@ export const create = mutation({
       v.literal("other")
     ),
     imageUrl: v.optional(v.string()),
+    imageUrls: v.optional(v.array(v.string())),
+    priceOptions: v.optional(v.array(priceOptionValidator)),
     sortOrder: v.number(),
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.sessionToken);
+    validatePriceOptions(args.price, args.priceOptions);
     const existing = await ctx.db
       .query("services")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
@@ -66,6 +97,11 @@ export const create = mutation({
       duration: args.duration,
       category: args.category,
       imageUrl: args.imageUrl,
+      imageUrls: args.imageUrls,
+      priceOptions: args.priceOptions?.map((option) => ({
+        label: option.label.trim(),
+        price: option.price,
+      })),
       sortOrder: args.sortOrder,
       isActive: true,
     });
@@ -91,11 +127,16 @@ export const update = mutation({
       )
     ),
     imageUrl: v.optional(v.string()),
+    imageUrls: v.optional(v.array(v.string())),
+    priceOptions: v.optional(v.array(priceOptionValidator)),
     isActive: v.optional(v.boolean()),
     sortOrder: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.sessionToken);
+    const current = await ctx.db.get(args.id);
+    if (!current) throw new Error("Service not found");
+    validatePriceOptions(args.price ?? current.price, args.priceOptions ?? current.priceOptions);
     const fields: Partial<typeof args> = { ...args };
     delete fields.id;
     delete fields.sessionToken;
@@ -104,6 +145,12 @@ export const update = mutation({
       if (value !== undefined) {
         updates[key] = value;
       }
+    }
+    if (args.priceOptions) {
+      updates.priceOptions = args.priceOptions.map((option) => ({
+        label: option.label.trim(),
+        price: option.price,
+      }));
     }
     if (Object.keys(updates).length === 0) {
       throw new Error("No fields to update");

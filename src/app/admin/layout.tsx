@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { AdminAuthProvider, useAdminAuth } from "@/lib/admin-auth-context";
@@ -24,6 +24,12 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAdminAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  useEffect(() => {
+    if (pathname !== "/admin/login" && !loading && !user) {
+      router.replace("/admin/login");
+    }
+  }, [loading, pathname, router, user]);
+
   if (pathname === "/admin/login") {
     return <>{children}</>;
   }
@@ -37,7 +43,6 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    router.push("/admin/login");
     return null;
   }
 

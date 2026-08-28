@@ -27,6 +27,15 @@ export default defineSchema({
     duration: v.number(),
     category: v.union(v.literal("nails"), v.literal("lashes"), v.literal("brows"), v.literal("skin"), v.literal("other")),
     imageUrl: v.optional(v.string()),
+    imageUrls: v.optional(v.array(v.string())),
+    priceOptions: v.optional(
+      v.array(
+        v.object({
+          label: v.string(),
+          price: v.number(),
+        })
+      )
+    ),
     isActive: v.boolean(),
     sortOrder: v.number(),
   }).index("by_slug", ["slug"])
@@ -47,6 +56,8 @@ export default defineSchema({
     ),
     depositAmount: v.number(),
     totalAmount: v.number(),
+    serviceOptionLabel: v.optional(v.string()),
+    serviceOptionPrice: v.optional(v.number()),
     notes: v.optional(v.string()),
     expiresAt: v.optional(v.number()),
     createdAt: v.number(),
@@ -91,6 +102,7 @@ export default defineSchema({
     price: v.number(),
     categoryId: v.id("productCategories"),
     imageUrl: v.string(),
+    imageUrls: v.optional(v.array(v.string())),
     stock: v.number(),
     isActive: v.boolean(),
     isFeatured: v.boolean(),

@@ -1,11 +1,19 @@
 "use client";
 
-import { useQuery, useMutation, useAction } from "convex/react";
+import { useState } from "react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
-import { useState, useRef } from "react";
+import type { Doc } from "convex/_generated/dataModel";
+import MultiImageManager, {
+  existingManagedImages,
+  releaseManagedImagePreviews,
+  type ManagedImage,
+} from "@/components/admin/MultiImageManager";
 import { useAdminAuth } from "@/lib/admin-auth-context";
+import { getServicePriceLabel } from "@/lib/service-pricing";
 
 const categories = ["nails", "lashes", "brows", "skin", "other"] as const;
+type ServiceCategory = (typeof categories)[number];
 
 interface ServiceForm {
   name: string;
@@ -13,11 +21,22 @@ interface ServiceForm {
   description: string;
   price: string;
   duration: string;
-  category: typeof categories[number];
+  category: ServiceCategory;
+}
+
+interface PriceOptionForm {
+  id: string;
+  label: string;
+  price: string;
 }
 
 const emptyForm: ServiceForm = {
-  name: "", slug: "", description: "", price: "", duration: "", category: "nails",
+  name: "",
+  slug: "",
+  description: "",
+  price: "",
+  duration: "",
+  category: "nails",
 };
 
 export default function AdminServicesPage() {
@@ -29,232 +48,254 @@ export default function AdminServicesPage() {
   const createService = useMutation(api.services.create);
   const updateService = useMutation(api.services.update);
   const removeService = useMutation(api.services.remove);
-
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState<any>(null);
-  const [form, setForm] = useState<ServiceForm>(emptyForm);
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
   const generateUploadUrl = useAction(api.upload.generateUploadUrl);
   const getStorageUrl = useAction(api.upload.getStorageUrl);
 
-  const slugify = (t: string) =>
-    t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState<Doc<"services"> | null>(null);
+  const [form, setForm] = useState<ServiceForm>(emptyForm);
+  const [images, setImages] = useState<ManagedImage[]>([]);
+  const [hasPriceOptions, setHasPriceOptions] = useState(false);
+  const [priceOptions, setPriceOptions] = useState<PriceOptionForm[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) {
-      setFile(f);
-      setPreview(URL.createObjectURL(f));
-    }
+  const slugify = (text: string) =>
+    text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+  const resetModal = () => {
+    releaseManagedImagePreviews(images);
+    setShowModal(false);
+    setEditing(null);
+    setForm(emptyForm);
+    setImages([]);
+    setHasPriceOptions(false);
+    setPriceOptions([]);
+    setError("");
   };
 
   const openAdd = () => {
     setEditing(null);
     setForm(emptyForm);
-    setFile(null);
-    setPreview("");
+    setImages([]);
+    setHasPriceOptions(false);
+    setPriceOptions([]);
     setError("");
     setShowModal(true);
   };
 
-  const openEdit = (s: any) => {
-    setEditing(s);
+  const openEdit = (service: Doc<"services">) => {
+    const urls = service.imageUrls?.length
+      ? service.imageUrls
+      : service.imageUrl
+        ? [service.imageUrl]
+        : [];
+    const options = service.priceOptions ?? [];
+    setEditing(service);
     setForm({
-      name: s.name,
-      slug: s.slug,
-      description: s.description || "",
-      price: String(s.price),
-      duration: String(s.duration),
-      category: s.category,
+      name: service.name,
+      slug: service.slug,
+      description: service.description || "",
+      price: String(service.price),
+      duration: String(service.duration),
+      category: service.category,
     });
-    setFile(null);
-    setPreview(s.imageUrl || "");
+    setImages(existingManagedImages(urls));
+    setHasPriceOptions(options.length > 0);
+    setPriceOptions(
+      options.map((option) => ({
+        id: crypto.randomUUID(),
+        label: option.label,
+        price: String(option.price),
+      }))
+    );
     setError("");
     setShowModal(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const uploadImages = async () => {
+    return Promise.all(images.map(async (image) => {
+      if (image.kind === "existing") return image.url;
+      const uploadUrl = await generateUploadUrl({ sessionToken: sessionToken! });
+      const response = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": image.file.type },
+        body: image.file,
+      });
+      if (!response.ok) throw new Error(`Could not upload ${image.file.name}`);
+      const { storageId } = (await response.json()) as { storageId?: string };
+      if (!storageId) throw new Error(`Upload failed for ${image.file.name}`);
+      const url = await getStorageUrl({ sessionToken: sessionToken!, storageId });
+      if (!url) throw new Error(`Could not save ${image.file.name}`);
+      return url;
+    }));
+  };
+
+  const normalizePriceOptions = () => {
+    if (!hasPriceOptions) return [];
+    if (priceOptions.length < 2) throw new Error("Add at least two price options");
+    const normalized = priceOptions.map((option) => ({
+      label: option.label.trim(),
+      price: Number(option.price),
+    }));
+    if (normalized.some((option) => !option.label || !Number.isFinite(option.price) || option.price < 0)) {
+      throw new Error("Every price option needs a label and valid price");
+    }
+    return normalized;
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError("");
     setSaving(true);
     try {
-      let imageUrl = editing?.imageUrl || "";
+      const normalizedOptions = normalizePriceOptions();
+      const price = normalizedOptions.length
+        ? Math.min(...normalizedOptions.map((option) => option.price))
+        : Number(form.price);
+      if (!Number.isFinite(price) || price < 0) throw new Error("Enter a valid service price");
 
-      if (file) {
-        const uploadUrl = await generateUploadUrl({ sessionToken: sessionToken! });
-        const result = await fetch(uploadUrl, {
-          method: "POST",
-          headers: { "Content-Type": file.type },
-          body: file,
-        });
-        const { storageId } = await result.json();
-        imageUrl = await getStorageUrl({
-          sessionToken: sessionToken!,
-          storageId: storageId as string,
-        });
-      }
+      const imageUrls = await uploadImages();
+      const values = {
+        name: form.name.trim(),
+        slug: form.slug || slugify(form.name),
+        description: form.description.trim(),
+        price,
+        priceOptions: normalizedOptions,
+        duration: Number(form.duration),
+        category: form.category,
+        imageUrl: imageUrls[0] ?? "",
+        imageUrls,
+      };
 
       if (editing) {
-        await updateService({
-          sessionToken: sessionToken!,
-          id: editing._id,
-          name: form.name,
-          slug: form.slug || slugify(form.name),
-          description: form.description,
-          price: Number(form.price),
-          duration: Number(form.duration),
-          category: form.category,
-          imageUrl,
-        });
+        await updateService({ sessionToken: sessionToken!, id: editing._id, ...values });
       } else {
         await createService({
           sessionToken: sessionToken!,
-          name: form.name,
-          slug: form.slug || slugify(form.name),
-          description: form.description,
-          price: Number(form.price),
-          duration: Number(form.duration),
-          category: form.category,
-          imageUrl,
+          ...values,
           sortOrder: services?.length ?? 0,
         });
       }
-      setShowModal(false);
-      setForm(emptyForm);
-      setEditing(null);
-      setFile(null);
-      setPreview("");
-    } catch (err: any) {
-      setError(err.message || "Failed to save service");
+      resetModal();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Failed to save service");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (s: any) => {
-    if (!confirm(`Deactivate "${s.name}"?`)) return;
-    await removeService({ sessionToken: sessionToken!, id: s._id });
+  const handleDelete = async (service: Doc<"services">) => {
+    if (!confirm(`Deactivate "${service.name}"?`)) return;
+    await removeService({ sessionToken: sessionToken!, id: service._id });
   };
 
-  const handleToggleActive = async (s: any) => {
-    await updateService({ sessionToken: sessionToken!, id: s._id, isActive: !s.isActive });
+  const handleToggleActive = async (service: Doc<"services">) => {
+    await updateService({
+      sessionToken: sessionToken!,
+      id: service._id,
+      isActive: !service.isActive,
+    });
+  };
+
+  const togglePriceOptions = (enabled: boolean) => {
+    setHasPriceOptions(enabled);
+    if (enabled && priceOptions.length === 0) {
+      setPriceOptions([
+        { id: crypto.randomUUID(), label: "Short Nails", price: form.price },
+        { id: crypto.randomUUID(), label: "Long Nails", price: "" },
+      ]);
+    }
   };
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Services</h1>
-        <button onClick={openAdd}
-          className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700">
+        <button onClick={openAdd} className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700">
           + Add Service
         </button>
       </div>
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">
-                {editing ? "Edit Service" : "Add Service"}
-              </h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+          <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">{editing ? "Edit Service" : "Add Service"}</h2>
+              <button onClick={resetModal} className="text-2xl text-gray-400 hover:text-gray-600" aria-label="Close">&times;</button>
             </div>
 
             {error && <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <MultiImageManager label="Service pictures" images={images} onChange={setImages} />
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Service Photo</label>
-                <input ref={fileRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                <button type="button" onClick={() => fileRef.current?.click()}
-                  className="w-full rounded-lg border-2 border-dashed border-gray-300 p-6 text-center hover:border-rose-400 hover:bg-rose-50/50 transition-colors">
-                  {preview ? (
-                    <div className="flex flex-col items-center gap-2">
-                      <img src={preview} alt="Preview" className="h-32 w-32 rounded-lg object-cover" />
-                      <span className="text-xs text-gray-500">Click to change</span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2">
-                      <svg className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                      </svg>
-                      <span className="text-sm text-gray-600 font-medium">Click to upload photo</span>
-                      <span className="text-xs text-gray-400">PNG, JPG, WEBP</span>
-                    </div>
-                  )}
-                </button>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Name *</label>
+                <input type="text" required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value, slug: slugify(event.target.value) })} className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                <input type="text" required value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value, slug: slugify(e.target.value) })}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm" />
+                <label className="mb-1 block text-sm font-medium text-gray-700">Slug</label>
+                <input type="text" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm" placeholder="auto-generated from name" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Slug</label>
-                <input type="text" value={form.slug}
-                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm"
-                  placeholder="auto-generated from name" />
+                <label className="mb-1 block text-sm font-medium text-gray-700">Description *</label>
+                <textarea required rows={3} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm" />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
-                <textarea required rows={3} value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm" />
+              <div className="rounded-xl border border-gray-200 p-4">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                  <input type="checkbox" checked={hasPriceOptions} onChange={(event) => togglePriceOptions(event.target.checked)} className="rounded border-gray-300 text-rose-600" />
+                  Use different price options
+                </label>
+                <p className="mt-1 text-xs text-gray-500">Use this for choices such as short and long acrylic nails.</p>
+
+                {hasPriceOptions ? (
+                  <div className="mt-4 space-y-3">
+                    {priceOptions.map((option, index) => (
+                      <div key={option.id} className="grid grid-cols-[1fr_140px_auto] gap-2">
+                        <input type="text" required value={option.label} onChange={(event) => setPriceOptions((current) => current.map((item) => item.id === option.id ? { ...item, label: event.target.value } : item))} className="rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder={`Option ${index + 1} label`} />
+                        <input type="number" required min={0} value={option.price} onChange={(event) => setPriceOptions((current) => current.map((item) => item.id === option.id ? { ...item, price: event.target.value } : item))} className="rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="Price (₦)" />
+                        <button type="button" disabled={priceOptions.length <= 2} onClick={() => setPriceOptions((current) => current.filter((item) => item.id !== option.id))} className="px-2 text-lg text-red-500 disabled:opacity-25" aria-label={`Remove ${option.label || `option ${index + 1}`}`}>×</button>
+                      </div>
+                    ))}
+                    <button type="button" onClick={() => setPriceOptions((current) => [...current, { id: crypto.randomUUID(), label: "", price: "" }])} className="text-sm font-medium text-rose-600 hover:text-rose-700">+ Add another price option</button>
+                  </div>
+                ) : (
+                  <div className="mt-4">
+                    <label className="mb-1 block text-sm font-medium text-gray-700">Price (₦) *</label>
+                    <input type="number" required min={0} value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm" />
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price (₦) *</label>
-                  <input type="number" required min={0} value={form.price}
-                    onChange={(e) => setForm({ ...form, price: e.target.value })}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm" />
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Duration (min) *</label>
+                  <input type="number" required min={1} value={form.duration} onChange={(event) => setForm({ ...form, duration: event.target.value })} className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration (min) *</label>
-                  <input type="number" required min={1} value={form.duration}
-                    onChange={(e) => setForm({ ...form, duration: e.target.value })}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm" />
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Category *</label>
+                  <select required value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value as ServiceCategory })} className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm">
+                    {categories.map((category) => <option key={category} value={category}>{category.charAt(0).toUpperCase() + category.slice(1)}</option>)}
+                  </select>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-                <select required value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value as typeof categories[number] })}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm">
-                  {categories.map((c) => (
-                    <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
-                  ))}
-                </select>
               </div>
 
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)}
-                  className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                  Cancel
-                </button>
-                <button type="submit" disabled={saving}
-                  className="flex-1 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50">
-                  {saving ? "Saving..." : editing ? "Update" : "Create"}
-                </button>
+                <button type="button" onClick={resetModal} className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                <button type="submit" disabled={saving} className="flex-1 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50">{saving ? "Saving..." : editing ? "Update" : "Create"}</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="border-b border-gray-200 bg-gray-50">
             <tr>
               <th className="px-4 py-3 text-left font-medium text-gray-500">Service</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500">Category</th>
@@ -265,38 +306,28 @@ export default function AdminServicesPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {services?.map((s: any) => (
-              <tr key={s._id} className="hover:bg-gray-50">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs overflow-hidden">
-                      {s.imageUrl ? <img src={s.imageUrl} alt="" className="h-full w-full object-cover" /> : "IMG"}
+            {services?.map((service) => {
+              const cover = service.imageUrls?.[0] || service.imageUrl;
+              const imageCount = service.imageUrls?.length ?? (service.imageUrl ? 1 : 0);
+              return (
+                <tr key={service._id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-gray-100 text-xs text-gray-400">{cover ? <img src={cover} alt="" className="h-full w-full object-cover" /> : "IMG"}</div>
+                      <div>
+                        <p className="font-medium text-gray-900">{service.name}</p>
+                        <p className="text-xs text-gray-500">{imageCount} picture{imageCount === 1 ? "" : "s"}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{s.name}</p>
-                      <p className="text-xs text-gray-500">{s.description?.slice(0, 60)}...</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-gray-700 capitalize">{s.category}</td>
-                <td className="px-4 py-3 text-gray-700">₦{s.price?.toLocaleString()}</td>
-                <td className="px-4 py-3 text-gray-700">{s.duration} min</td>
-                <td className="px-4 py-3">
-                  <button onClick={() => handleToggleActive(s)}
-                    className={`rounded-full px-2 py-1 text-xs font-medium cursor-pointer transition-colors ${
-                      s.isActive ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                    }`}>{s.isActive ? "Active" : "Inactive"}</button>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => openEdit(s)}
-                      className="text-rose-600 hover:text-rose-700 text-sm font-medium">Edit</button>
-                    <button onClick={() => handleDelete(s)}
-                      className="text-red-600 hover:text-red-700 text-sm font-medium">Deactivate</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-4 py-3 capitalize text-gray-700">{service.category}</td>
+                  <td className="px-4 py-3 text-gray-700">{getServicePriceLabel(service)}</td>
+                  <td className="px-4 py-3 text-gray-700">{service.duration} min</td>
+                  <td className="px-4 py-3"><button onClick={() => handleToggleActive(service)} className={`rounded-full px-2 py-1 text-xs font-medium ${service.isActive ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>{service.isActive ? "Active" : "Inactive"}</button></td>
+                  <td className="px-4 py-3"><div className="flex items-center gap-2"><button onClick={() => openEdit(service)} className="text-sm font-medium text-rose-600 hover:text-rose-700">Edit</button><button onClick={() => handleDelete(service)} className="text-sm font-medium text-red-600 hover:text-red-700">Deactivate</button></div></td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

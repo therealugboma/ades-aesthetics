@@ -6,6 +6,7 @@ interface Product {
   slug: string;
   price: number;
   imageUrl: string;
+  imageUrls?: string[];
   stock: number;
   description?: string;
   isActive?: boolean;

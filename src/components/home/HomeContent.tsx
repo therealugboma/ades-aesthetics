@@ -3,6 +3,7 @@
 import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
 import Link from "next/link";
+import { getServicePriceLabel } from "@/lib/service-pricing";
 
 function formatPrice(price: number): string {
   return `₦${price.toLocaleString()}`;
@@ -28,7 +29,15 @@ export function HomeServices() {
           key={service._id}
           className="group relative rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow"
         >
-          <div className="aspect-video w-full rounded-xl bg-gradient-to-br from-rose-100 to-pink-50 mb-4" />
+          <div className="aspect-video w-full overflow-hidden rounded-xl bg-gradient-to-br from-rose-100 to-pink-50 mb-4">
+            {(service.imageUrls?.[0] || service.imageUrl) && (
+              <img
+                src={service.imageUrls?.[0] || service.imageUrl}
+                alt={`${service.name} result`}
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+            )}
+          </div>
           <h3 className="text-lg font-semibold text-gray-900">
             {service.name}
           </h3>
@@ -37,7 +46,7 @@ export function HomeServices() {
           </p>
           <div className="mt-4 flex items-center justify-between">
             <span className="text-lg font-bold text-rose-600">
-              {formatPrice(service.price)}
+              {getServicePriceLabel(service)}
             </span>
             <span className="text-sm text-gray-500">
               {service.duration} min
@@ -77,9 +86,9 @@ export function HomeProducts() {
           className="group block rounded-2xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
         >
           <div className="aspect-square w-full overflow-hidden rounded-xl bg-gradient-to-br from-amber-100 to-rose-50">
-            {product.imageUrl && (
+            {(product.imageUrls?.[0] || product.imageUrl) && (
               <img
-                src={product.imageUrl}
+                src={product.imageUrls?.[0] || product.imageUrl}
                 alt={product.name}
                 className="h-full w-full object-cover"
               />

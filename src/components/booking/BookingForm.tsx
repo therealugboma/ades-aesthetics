@@ -7,6 +7,12 @@ import type { Doc } from "convex/_generated/dataModel";
 import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
 import { initializePaystackPayment, loadPaystackScript } from "@/lib/paystack";
+import {
+  getSelectedServicePrice,
+  getServicePriceLabel,
+  getServicePriceOptions,
+  type ServicePriceOption,
+} from "@/lib/service-pricing";
 
 interface FormData {
   name: string;
@@ -23,6 +29,7 @@ export default function BookingForm() {
   });
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState<Doc<"services"> | null>(null);
+  const [selectedPriceOption, setSelectedPriceOption] = useState<ServicePriceOption | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [formData, setFormData] = useState<FormData>({
@@ -58,6 +65,10 @@ export default function BookingForm() {
   for (let i = 1; i <= daysInMonth; i++) calendarDays.push(i);
 
   const depositPercentage = Number(depositSetting?.value) || 30;
+  const selectedServiceOptions = selectedService ? getServicePriceOptions(selectedService) : [];
+  const selectedPrice = selectedService
+    ? getSelectedServicePrice(selectedService, selectedPriceOption)
+    : 0;
 
   if (services === undefined) {
     return (
@@ -70,7 +81,12 @@ export default function BookingForm() {
   }
 
   const handleSubmit = async () => {
-    if (!selectedService || !selectedDate || !selectedTime) return;
+    if (
+      !selectedService ||
+      !selectedDate ||
+      !selectedTime ||
+      (selectedServiceOptions.length > 0 && !selectedPriceOption)
+    ) return;
     setIsSubmitting(true);
     setCheckoutError("");
     let reference: string | undefined;
@@ -87,6 +103,7 @@ export default function BookingForm() {
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
+          serviceOptionLabel: selectedPriceOption?.label,
           notes: formData.notes,
         }),
       });
@@ -151,7 +168,7 @@ export default function BookingForm() {
       </div>
       <div className="mb-6 text-center text-sm text-gray-500">
         {step === 1 && "Select a Service"}
-        {step === 2 && "Choose Date & Time"}
+        {step === 2 && "Choose Option, Date & Time"}
         {step === 3 && "Your Details"}
         {step === 4 && "Confirm & Pay"}
       </div>
@@ -163,6 +180,8 @@ export default function BookingForm() {
               key={service._id}
               onClick={() => {
                 setSelectedService(service);
+                const options = getServicePriceOptions(service);
+                setSelectedPriceOption(options.length === 1 ? options[0] : null);
                 setSelectedDate("");
                 setSelectedTime("");
                 setCheckoutError("");
@@ -180,7 +199,7 @@ export default function BookingForm() {
               <p className="mt-1 text-sm text-gray-500">{service.description}</p>
               <div className="mt-2 flex items-center gap-3">
                 <span className="font-bold text-rose-600">
-                  {formatPrice(service.price)}
+                  {getServicePriceLabel(service)}
                 </span>
                 <span className="text-sm text-gray-400">
                   {service.duration} min
@@ -193,6 +212,35 @@ export default function BookingForm() {
 
       {step === 2 && (
         <div>
+          {selectedServiceOptions.length > 0 && (
+            <fieldset className="mb-6 rounded-xl border border-rose-200 bg-rose-50/50 p-4">
+              <legend className="px-1 text-sm font-semibold text-gray-900">Choose your {selectedService?.name} option</legend>
+              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                {selectedServiceOptions.map((option) => (
+                  <button
+                    key={option.label}
+                    type="button"
+                    onClick={() => {
+                      setSelectedPriceOption(option);
+                      setSelectedDate("");
+                      setSelectedTime("");
+                    }}
+                    className={`rounded-xl border-2 p-4 text-left transition-colors ${
+                      selectedPriceOption?.label === option.label
+                        ? "border-rose-600 bg-white"
+                        : "border-white bg-white/70 hover:border-rose-300"
+                    }`}
+                  >
+                    <span className="block font-medium text-gray-900">{option.label}</span>
+                    <span className="mt-1 block font-bold text-rose-600">{formatPrice(option.price)}</span>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
+
+          {(selectedServiceOptions.length === 0 || selectedPriceOption) && (
+            <>
           <div className="mb-6 rounded-xl border border-gray-200 p-4">
             <div className="mb-4 text-center">
               <span className="text-sm font-medium text-gray-600">
@@ -279,6 +327,14 @@ export default function BookingForm() {
                 </p>
               )}
             </div>
+          )}
+            </>
+          )}
+
+          {selectedServiceOptions.length > 0 && !selectedPriceOption && (
+            <p className="rounded-lg bg-amber-50 p-4 text-sm text-amber-800">
+              Choose a price option above to see available appointment times.
+            </p>
           )}
 
           <button
@@ -379,6 +435,12 @@ export default function BookingForm() {
                   {selectedService.name}
                 </span>
               </div>
+              {selectedPriceOption && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Option</span>
+                  <span className="font-medium text-gray-900">{selectedPriceOption.label}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-500">Date</span>
                 <span className="font-medium text-gray-900">{selectedDate}</span>
@@ -400,13 +462,13 @@ export default function BookingForm() {
                   </span>
                   <span className="font-bold text-rose-600">
                     {formatPrice(
-                      Math.round(selectedService.price * (depositPercentage / 100))
+                      Math.round(selectedPrice * (depositPercentage / 100))
                     )}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-400">
                   <span>Total</span>
-                  <span>{formatPrice(selectedService.price)}</span>
+                  <span>{formatPrice(selectedPrice)}</span>
                 </div>
               </div>
             </div>

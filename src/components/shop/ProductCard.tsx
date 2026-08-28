@@ -10,6 +10,7 @@ interface Product {
   slug: string;
   price: number;
   imageUrl: string;
+  imageUrls?: string[];
   stock: number;
   description?: string;
   isActive?: boolean;
@@ -22,6 +23,7 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const router = useRouter();
   const addItem = useCartStore((s) => s.addItem);
+  const coverImage = product.imageUrls?.[0] || product.imageUrl;
 
   const handleAddToCart = () => {
     addItem({
@@ -29,7 +31,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       name: product.name,
       slug: product.slug,
       price: product.price,
-      imageUrl: product.imageUrl,
+      imageUrl: coverImage,
       stock: product.stock,
     });
   };
@@ -40,9 +42,9 @@ export default function ProductCard({ product }: ProductCardProps) {
         className="relative h-56 bg-gradient-to-br from-rose-50 to-pink-50 cursor-pointer"
         onClick={() => router.push(`/shop/${product.slug}`)}
       >
-        {product.imageUrl ? (
+        {coverImage ? (
           <img
-            src={product.imageUrl}
+            src={coverImage}
             alt={product.name}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
@@ -59,6 +61,11 @@ export default function ProductCard({ product }: ProductCardProps) {
               Out of Stock
             </span>
           </div>
+        )}
+        {(product.imageUrls?.length ?? 0) > 1 && (
+          <span className="absolute bottom-3 right-3 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
+            {product.imageUrls!.length} photos
+          </span>
         )}
       </div>
       <div className="p-5">

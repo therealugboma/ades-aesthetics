@@ -38,6 +38,11 @@ export const seed = mutation({
         price: 6500,
         duration: 60,
         category: "nails" as const,
+        imageUrl: "/services/premium/gel-french-pink.webp",
+        imageUrls: [
+          "/services/premium/gel-french-pink.webp",
+          "/services/premium/gel-yellow-french.webp",
+        ],
         sortOrder: 2,
       },
       {
@@ -47,7 +52,30 @@ export const seed = mutation({
         price: 8500,
         duration: 90,
         category: "nails" as const,
+        imageUrl: "/services/premium/acrylic-short.webp",
+        imageUrls: [
+          "/services/premium/acrylic-short.webp",
+          "/services/premium/acrylic-long.webp",
+        ],
+        priceOptions: [
+          { label: "Short Nails", price: 8500 },
+          { label: "Long Nails", price: 10500 },
+        ],
         sortOrder: 3,
+      },
+      {
+        name: "BIAB Nails",
+        slug: "biab-nails",
+        description: "Builder gel manicure that strengthens natural nails while creating a smooth, glossy and durable finish.",
+        price: 7500,
+        duration: 75,
+        category: "nails" as const,
+        imageUrl: "/services/premium/biab-yellow-pattern.webp",
+        imageUrls: [
+          "/services/premium/biab-yellow-pattern.webp",
+          "/services/premium/biab-yellow-pattern-two-hands.webp",
+        ],
+        sortOrder: 4,
       },
       {
         name: "Classic Lash Extensions",
@@ -56,7 +84,37 @@ export const seed = mutation({
         price: 12000,
         duration: 90,
         category: "lashes" as const,
-        sortOrder: 4,
+        imageUrl: "/services/premium/classic-lashes.webp",
+        imageUrls: ["/services/premium/classic-lashes.webp"],
+        sortOrder: 5,
+      },
+      {
+        name: "Hybrid Set Lashes",
+        slug: "hybrid-set-lashes",
+        description: "A balanced blend of classic and volume lashes for textured fullness with a soft, natural finish.",
+        price: 13500,
+        duration: 120,
+        category: "lashes" as const,
+        imageUrl: "/services/premium/hybrid-lashes-front.webp",
+        imageUrls: [
+          "/services/premium/hybrid-lashes-front.webp",
+          "/services/premium/hybrid-lashes-close.webp",
+        ],
+        sortOrder: 6,
+      },
+      {
+        name: "Wispy Set Lashes",
+        slug: "wispy-set-lashes",
+        description: "A soft, fluttery extension set with carefully placed wispy spikes for an airy, textured look.",
+        price: 14000,
+        duration: 120,
+        category: "lashes" as const,
+        imageUrl: "/services/premium/wispy-lashes-portrait.webp",
+        imageUrls: [
+          "/services/premium/wispy-lashes-portrait.webp",
+          "/services/premium/wispy-lashes-detail.webp",
+        ],
+        sortOrder: 7,
       },
       {
         name: "Volume Lash Extensions",
@@ -65,7 +123,7 @@ export const seed = mutation({
         price: 15000,
         duration: 120,
         category: "lashes" as const,
-        sortOrder: 5,
+        sortOrder: 8,
       },
       {
         name: "Lash Lift & Tint",
@@ -74,7 +132,7 @@ export const seed = mutation({
         price: 9000,
         duration: 60,
         category: "lashes" as const,
-        sortOrder: 6,
+        sortOrder: 9,
       },
       {
         name: "Brow Shaping & Tint",
@@ -83,7 +141,7 @@ export const seed = mutation({
         price: 5500,
         duration: 30,
         category: "brows" as const,
-        sortOrder: 7,
+        sortOrder: 10,
       },
     ];
 
@@ -186,6 +244,7 @@ export const seed = mutation({
       await ctx.db.insert("products", {
         ...product,
         imageUrl: "",
+        imageUrls: [],
         isActive: true,
         createdAt: Date.now(),
       });
@@ -233,5 +292,166 @@ export const seed = mutation({
     });
 
     return "Seeded successfully";
+  },
+});
+
+export const syncServicePortfolio = mutation({
+  args: { seedToken: v.string() },
+  handler: async (ctx, args) => {
+    const configuredSeedToken = process.env.SEED_TOKEN;
+    if (!configuredSeedToken || args.seedToken !== configuredSeedToken) {
+      throw new Error("Unauthorized portfolio sync request");
+    }
+
+    const portfolioServices = [
+      {
+        name: "Classic Manicure",
+        slug: "classic-manicure",
+        description: "A relaxing manicure including nail shaping, cuticle care, hand massage, and polish of your choice.",
+        price: 4500,
+        priceOptions: [],
+        duration: 45,
+        category: "nails" as const,
+        sortOrder: 1,
+      },
+      {
+        name: "Gel Nails",
+        slug: "gel-nails",
+        description: "Long-lasting gel nails with a flawless finish. Includes shaping, cuticle work, and UV-cured gel polish.",
+        price: 6500,
+        priceOptions: [],
+        duration: 60,
+        category: "nails" as const,
+        imageUrl: "/services/premium/gel-french-pink.webp",
+        imageUrls: [
+          "/services/premium/gel-french-pink.webp",
+          "/services/premium/gel-yellow-french.webp",
+        ],
+        sortOrder: 2,
+      },
+      {
+        name: "Acrylic Full Set",
+        slug: "acrylic-full-set",
+        description: "Full set of acrylic nails with your preferred length, custom shape and design.",
+        price: 8500,
+        priceOptions: [
+          { label: "Short Nails", price: 8500 },
+          { label: "Long Nails", price: 10500 },
+        ],
+        duration: 90,
+        category: "nails" as const,
+        imageUrl: "/services/premium/acrylic-short.webp",
+        imageUrls: [
+          "/services/premium/acrylic-short.webp",
+          "/services/premium/acrylic-long.webp",
+        ],
+        sortOrder: 3,
+      },
+      {
+        name: "BIAB Nails",
+        slug: "biab-nails",
+        description: "Builder gel manicure that strengthens natural nails while creating a smooth, glossy and durable finish.",
+        price: 7500,
+        priceOptions: [],
+        duration: 75,
+        category: "nails" as const,
+        imageUrl: "/services/premium/biab-yellow-pattern.webp",
+        imageUrls: [
+          "/services/premium/biab-yellow-pattern.webp",
+          "/services/premium/biab-yellow-pattern-two-hands.webp",
+        ],
+        sortOrder: 4,
+      },
+      {
+        name: "Classic Lash Extensions",
+        slug: "classic-lash-extensions",
+        description: "Individual lash extensions applied one-to-one for a natural, everyday look.",
+        price: 12000,
+        priceOptions: [],
+        duration: 90,
+        category: "lashes" as const,
+        imageUrl: "/services/premium/classic-lashes.webp",
+        imageUrls: ["/services/premium/classic-lashes.webp"],
+        sortOrder: 5,
+      },
+      {
+        name: "Hybrid Set Lashes",
+        slug: "hybrid-set-lashes",
+        description: "A balanced blend of classic and volume lashes for textured fullness with a soft, natural finish.",
+        price: 13500,
+        priceOptions: [],
+        duration: 120,
+        category: "lashes" as const,
+        imageUrl: "/services/premium/hybrid-lashes-front.webp",
+        imageUrls: [
+          "/services/premium/hybrid-lashes-front.webp",
+          "/services/premium/hybrid-lashes-close.webp",
+        ],
+        sortOrder: 6,
+      },
+      {
+        name: "Wispy Set Lashes",
+        slug: "wispy-set-lashes",
+        description: "A soft, fluttery extension set with carefully placed wispy spikes for an airy, textured look.",
+        price: 14000,
+        priceOptions: [],
+        duration: 120,
+        category: "lashes" as const,
+        imageUrl: "/services/premium/wispy-lashes-portrait.webp",
+        imageUrls: [
+          "/services/premium/wispy-lashes-portrait.webp",
+          "/services/premium/wispy-lashes-detail.webp",
+        ],
+        sortOrder: 7,
+      },
+      {
+        name: "Volume Lash Extensions",
+        slug: "volume-lash-extensions",
+        description: "Multiple lightweight extensions per natural lash for a dramatic, full look.",
+        price: 15000,
+        priceOptions: [],
+        duration: 120,
+        category: "lashes" as const,
+        sortOrder: 8,
+      },
+      {
+        name: "Lash Lift & Tint",
+        slug: "lash-lift-tint",
+        description: "Semi-permanent lash curl and tint for beautifully defined eyes without extensions.",
+        price: 9000,
+        priceOptions: [],
+        duration: 60,
+        category: "lashes" as const,
+        sortOrder: 9,
+      },
+      {
+        name: "Brow Shaping & Tint",
+        slug: "brow-shaping-tint",
+        description: "Precision brow shaping with wax and tint to define and enhance your brows.",
+        price: 5500,
+        priceOptions: [],
+        duration: 30,
+        category: "brows" as const,
+        sortOrder: 10,
+      },
+    ];
+
+    let created = 0;
+    let updated = 0;
+    for (const service of portfolioServices) {
+      const existing = await ctx.db
+        .query("services")
+        .withIndex("by_slug", (query) => query.eq("slug", service.slug))
+        .first();
+      if (existing) {
+        await ctx.db.patch(existing._id, { ...service, isActive: true });
+        updated += 1;
+      } else {
+        await ctx.db.insert("services", { ...service, isActive: true });
+        created += 1;
+      }
+    }
+
+    return { created, updated, total: portfolioServices.length };
   },
 });

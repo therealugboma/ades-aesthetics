@@ -12,6 +12,7 @@ type CheckoutBody = {
   name?: unknown;
   email?: unknown;
   phone?: unknown;
+  serviceOptionLabel?: unknown;
   notes?: unknown;
 };
 
@@ -29,7 +30,7 @@ function getConvexClient() {
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as CheckoutBody;
-    const { serviceId, date, time, name, email, phone, notes } = body;
+    const { serviceId, date, time, name, email, phone, serviceOptionLabel, notes } = body;
 
     if (
       typeof serviceId !== "string" ||
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
       typeof name !== "string" ||
       typeof email !== "string" ||
       typeof phone !== "string" ||
+      (serviceOptionLabel !== undefined && typeof serviceOptionLabel !== "string") ||
       (notes !== undefined && typeof notes !== "string")
     ) {
       return NextResponse.json(
@@ -56,6 +58,7 @@ export async function POST(request: Request) {
         name,
         email,
         phone,
+        serviceOptionLabel,
         notes,
         reference,
       }
