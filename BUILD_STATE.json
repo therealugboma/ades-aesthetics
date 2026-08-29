@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "source_revision": "working-tree-based-on-f9d4c6b",
-  "working_tree": "dirty",
-  "verified_at": "2026-08-28T22:43:24.000Z",
+  "source_revision": "342dc01",
+  "working_tree": "clean_at_release",
+  "verified_at": "2026-08-28T22:49:29.000Z",
   "gates": {
     "tests": {
       "status": "passed",
@@ -35,13 +35,13 @@
     },
     "remote_convex": {
       "status": "passed",
-      "environment": "development",
-      "result": "Schema deployed; service, availability, and authorization queries passed.",
+      "environment": "production",
+      "result": "Functions and schema deployed to hearty-ladybug-198; validation passed with no index deletions.",
       "evidence": "evidence/flows/F2_Booking/migration-state.json"
     },
     "production_release": {
-      "status": "pending",
-      "result": "Awaiting the authorized Convex and Vercel production deployments."
+      "status": "passed",
+      "result": "Vercel deployment dpl_FKaRrKT3n38SDX9Zen54r7V8bo3g promoted after candidate smoke tests; public checks returned five consecutive homepage 200 responses, gallery 200, webhook health 200, and no runtime errors in the first 15 minutes."
     },
     "paystack_transaction": {
       "status": "unverified",
