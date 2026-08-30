@@ -20,13 +20,15 @@ export default function AdminDashboardPage() {
   const totalBookings = appointments?.length ?? 0;
   const totalOrders = orders?.length ?? 0;
 
-  const paidOrders = orders?.filter((o: any) => o.status === "paid" || o.status === "delivered" || o.status === "shipped" || o.status === "processing") ?? [];
+  const paidOrders = orders?.filter(
+    (order) =>
+      order.status === "paid" ||
+      order.status === "delivered" ||
+      order.status === "shipped" ||
+      order.status === "processing"
+  ) ?? [];
   const totalRevenue =
-    paidOrders?.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0) ?? 0;
-  const productRevenue =
-    paidOrders?.reduce((sum: number, o: any) => sum + (o.subtotal ?? o.totalAmount ?? 0), 0) ?? 0;
-  const deliveryRevenue =
-    paidOrders?.reduce((sum: number, o: any) => sum + (o.deliveryFee || 0), 0) ?? 0;
+    paidOrders.reduce((sum, order) => sum + order.totalAmount, 0);
 
   const recentBookings = appointments?.slice(0, 5) ?? [];
   const recentOrders = orders?.slice(0, 5) ?? [];
@@ -47,8 +49,8 @@ export default function AdminDashboardPage() {
             </div>
             <div className="min-w-0">
               <p className="text-sm text-gray-500">Product Revenue</p>
-              <p className="truncate text-2xl font-bold text-gray-900">{isLoading ? "—" : `₦${productRevenue.toLocaleString()}`}</p>
-              <p className="text-xs text-gray-400 mt-1">Delivery fees: ₦{deliveryRevenue.toLocaleString()}</p>
+              <p className="truncate text-2xl font-bold text-gray-900">{isLoading ? "—" : `₦${totalRevenue.toLocaleString()}`}</p>
+              <p className="mt-1 text-xs text-gray-400">Delivery is arranged separately on WhatsApp</p>
             </div>
           </div>
         </div>
@@ -56,12 +58,9 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="mb-8 rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="text-sm font-semibold text-gray-500">Total Revenue (Products + Delivery)</h2>
+        <h2 className="text-sm font-semibold text-gray-500">Total Product Revenue</h2>
         <p className="mt-1 text-3xl font-bold text-gray-900">₦{isLoading ? "—" : totalRevenue.toLocaleString()}</p>
-        <div className="mt-3 flex flex-wrap gap-4 text-sm">
-          <span className="text-gray-600">Product Sales: <strong className="text-gray-900">₦{productRevenue.toLocaleString()}</strong></span>
-          <span className="text-gray-600">Delivery Fees Collected: <strong className="text-gray-900">₦{deliveryRevenue.toLocaleString()}</strong></span>
-        </div>
+        <p className="mt-3 text-sm text-gray-600">Product payments only; delivery is agreed directly with each customer.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -77,7 +76,7 @@ export default function AdminDashboardPage() {
             <p className="text-sm text-gray-500">No bookings yet</p>
           ) : (
             <div className="space-y-3">
-              {recentBookings.map((b: any) => (
+              {recentBookings.map((b) => (
                 <div key={b._id} className="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
                   <div>
                     <p className="text-sm font-medium text-gray-900">{b.service?.name ?? "Service"}</p>
@@ -110,13 +109,12 @@ export default function AdminDashboardPage() {
             <p className="text-sm text-gray-500">No orders yet</p>
           ) : (
             <div className="space-y-3">
-              {recentOrders.map((o: any) => (
+              {recentOrders.map((o) => (
                 <div key={o._id} className="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
                   <div>
                     <p className="text-sm font-medium text-gray-900">Order #{o._id.slice(-8)}</p>
                     <p className="text-xs text-gray-500">
-                      ₦{o.subtotal?.toLocaleString() ?? (o.totalAmount ?? 0) - (o.deliveryFee ?? 0)} products
-                      {o.deliveryFee ? ` + ₦${o.deliveryFee.toLocaleString()} delivery` : ""}
+                      ₦{o.totalAmount.toLocaleString()} products
                     </p>
                   </div>
                   <span className={`rounded-full px-2 py-1 text-xs font-medium ${

@@ -54,6 +54,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!adminSessionToken(request)) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
     const { customerId, items, deliveryAddress, deliveryNotes, deliveryFee, deliveryCost } = await request.json();
 
     if (!customerId || !items || !deliveryAddress) {
@@ -63,7 +66,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const orderId = await convexMutation("orders:create", {
+    const order = await convexMutation("orders:create", {
       customerId,
       items,
       deliveryAddress,
@@ -72,7 +75,7 @@ export async function POST(request: NextRequest) {
       deliveryCost: deliveryCost || undefined,
     });
 
-    return NextResponse.json({ id: orderId });
+    return NextResponse.json({ id: order.orderId });
   } catch (error) {
     console.error("Orders create error:", error);
     return NextResponse.json(

@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 interface ImageUploaderProps {
   onUpload: (file: File) => Promise<void>;
@@ -101,9 +102,12 @@ export default function ImageUploader({
         ) : preview ? (
           <div className="flex flex-col items-center">
             <div className="relative h-40 w-40 overflow-hidden rounded-xl">
-              <img
+              <Image
                 src={preview}
                 alt="Preview"
+                fill
+                sizes="160px"
+                unoptimized
                 className="h-full w-full object-cover"
               />
               <button

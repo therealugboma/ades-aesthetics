@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
 import GalleryClient from "@/components/gallery/GalleryClient";
+
+export const metadata: Metadata = {
+  title: "Beauty Gallery | Ades Aesthetics",
+  description: "View nail, lash, brow, and beauty work created by Ades Aesthetics.",
+  alternates: { canonical: "/gallery" },
+};
 
 export default function GalleryPage() {
   return (

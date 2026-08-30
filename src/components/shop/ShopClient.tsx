@@ -17,7 +17,9 @@ export default function ShopClient() {
   return (
     <>
       <button
+        type="button"
         onClick={() => setCartOpen(true)}
+        aria-label="Open shopping cart"
         className="fixed bottom-6 right-6 z-40 rounded-full bg-rose-600 p-4 text-white shadow-lg transition-colors hover:bg-rose-700"
       >
         <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,7 +38,22 @@ export default function ShopClient() {
         onUpdateQuantity={(id, qty) => updateQuantity(id, qty)}
         onRemoveItem={(id) => removeItem(id)}
       />
-      <ProductGrid products={products ?? []} />
+      {products === undefined ? (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-label="Loading products">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+              <div className="h-56 animate-pulse bg-gray-100" />
+              <div className="space-y-3 p-5">
+                <div className="h-5 w-2/3 animate-pulse rounded bg-gray-100" />
+                <div className="h-4 w-full animate-pulse rounded bg-gray-100" />
+                <div className="h-9 w-1/3 animate-pulse rounded bg-gray-100" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <ProductGrid products={products} />
+      )}
     </>
   );
 }

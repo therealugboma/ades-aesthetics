@@ -186,8 +186,7 @@ export default function Footer() {
                 Business Hours
               </h4>
               <div className="mt-2 space-y-1 text-sm text-gray-400">
-                <p>Monday - Saturday: 10:00 AM - 7:00 PM</p>
-                <p>Sunday: Closed</p>
+                <p>Open daily: 10:00 AM - 7:00 PM</p>
               </div>
             </div>
           </div>

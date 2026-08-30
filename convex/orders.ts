@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "./helpers";
+import type { Id } from "./_generated/dataModel";
 
 export const create = mutation({
   args: {
@@ -19,17 +20,17 @@ export const create = mutation({
   handler: async (ctx, args) => {
     let totalAmount = 0;
     const orderItems: {
-      productId: any;
+      productId: Id<"products">;
       quantity: number;
       price: number;
     }[] = [];
 
     for (const item of args.items) {
       const product = await ctx.db.get(item.productId);
-      if (!product || !("isActive" in product) || !product.isActive) {
+      if (!product || !product.isActive) {
         throw new Error(`Product ${item.productId} not found or inactive`);
       }
-      if (!("stock" in product) || product.stock < item.quantity) {
+      if (product.stock < item.quantity) {
         throw new Error(`Insufficient stock for ${product.name}`);
       }
       totalAmount += product.price * item.quantity;
@@ -42,9 +43,9 @@ export const create = mutation({
 
     for (const item of orderItems) {
       const product = await ctx.db.get(item.productId);
-      if (product && "stock" in product) {
+      if (product) {
         await ctx.db.patch(item.productId, {
-          stock: (product as any).stock - item.quantity,
+          stock: product.stock - item.quantity,
         });
       }
     }
@@ -70,7 +71,7 @@ export const create = mutation({
       });
     }
 
-    return orderId;
+    return { orderId, totalAmount };
   },
 });
 

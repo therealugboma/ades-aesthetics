@@ -1,9 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 export async function POST(request: NextRequest) {
   const { name, email, subject, message } = await request.json();
 
-  if (!name || !email || !subject || !message) {
+  if (
+    typeof name !== "string" ||
+    typeof email !== "string" ||
+    typeof subject !== "string" ||
+    typeof message !== "string" ||
+    !name.trim() ||
+    !/^\S+@\S+\.\S+$/.test(email.trim()) ||
+    !subject.trim() ||
+    !message.trim()
+  ) {
     return NextResponse.json({ error: "All fields required" }, { status: 400 });
   }
 
@@ -15,7 +33,7 @@ export async function POST(request: NextRequest) {
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   try {
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: "Ades Aesthetics <onboarding@resend.dev>",
       to: process.env.ADMIN_EMAIL || "adesaesthetics@gmail.com",
       replyTo: email,
@@ -23,18 +41,25 @@ export async function POST(request: NextRequest) {
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #b76e79;">New Contact Form Message</h2>
-          <p><strong>From:</strong> ${name} (${email})</p>
-          <p><strong>Subject:</strong> ${subject}</p>
+          <p><strong>From:</strong> ${escapeHtml(name)} (${escapeHtml(email)})</p>
+          <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
           <hr style="border: 1px solid #eee;" />
-          <p style="white-space: pre-wrap;">${message}</p>
+          <p style="white-space: pre-wrap;">${escapeHtml(message)}</p>
           <hr style="border: 1px solid #eee;" />
           <p style="color: #888; font-size: 12px;">Sent from Ades Aesthetics website contact form</p>
         </div>
       `,
     });
 
+    if (result.error) {
+      throw new Error("Email provider rejected the notification");
+    }
+
     return NextResponse.json({ ok: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch {
+    return NextResponse.json(
+      { error: "Email notification could not be delivered" },
+      { status: 502 }
+    );
   }
 }

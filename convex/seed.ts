@@ -1,6 +1,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { hashPassword } from "./password";
+import type { Id } from "./_generated/dataModel";
 
 export const seed = mutation({
   args: {
@@ -159,7 +160,7 @@ export const seed = mutation({
       { name: "Accessories", slug: "accessories", sortOrder: 4 },
     ];
 
-    const categoryIds: Record<string, any> = {};
+    const categoryIds: Record<string, Id<"productCategories">> = {};
     for (const cat of productCategories) {
       const id = await ctx.db.insert("productCategories", cat);
       categoryIds[cat.slug] = id;
@@ -268,13 +269,13 @@ export const seed = mutation({
 
     const settings = [
       { key: "business_name", value: "Ades Aesthetics" },
-      { key: "business_hours", value: JSON.stringify({ open: "09:00", close: "19:00" }) },
+      { key: "business_hours", value: JSON.stringify({ open: "10:00", close: "19:00" }) },
       { key: "deposit_percentage", value: "30" },
-      { key: "whatsapp_number", value: "+2348000000000" },
+      { key: "whatsapp_number", value: "+2348164695802" },
       { key: "address", value: "123 Beauty Lane, Victoria Island, Lagos, Nigeria" },
       { key: "email", value: "adesaesthetics@gmail.com" },
-      { key: "phone", value: "+2348000000000" },
-      { key: "instagram", value: "@adesaesthetics" },
+      { key: "phone", value: "+2348164695802" },
+      { key: "instagram", value: "@ades_aesthetics" },
     ];
 
     for (const setting of settings) {

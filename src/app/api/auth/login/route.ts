@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     res.headers.set("Cache-Control", "no-store");
 
     return res;
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Login failed" }, { status: 500 });
   }
 }

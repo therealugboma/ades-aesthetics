@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useCartStore } from "@/lib/cart-store";
 import { formatPrice } from "@/lib/utils";
 
@@ -58,9 +59,12 @@ export default function CartPage() {
                     <li key={item.productId} className="flex py-6">
                       <div className="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-amber-100 to-rose-50">
                         {item.imageUrl && (
-                          <img
+                          <Image
                             src={item.imageUrl}
                             alt={item.name}
+                            width={96}
+                            height={96}
+                            sizes="96px"
                             className="h-full w-full object-cover"
                           />
                         )}

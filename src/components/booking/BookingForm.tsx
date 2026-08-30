@@ -13,6 +13,11 @@ import {
   getServicePriceOptions,
   type ServicePriceOption,
 } from "@/lib/service-pricing";
+import {
+  formatCalendarDate,
+  getBusinessDateString,
+  getMonthGrid,
+} from "@/lib/booking-calendar";
 
 interface FormData {
   name: string;
@@ -40,6 +45,13 @@ export default function BookingForm() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
+  const todayDate = getBusinessDateString();
+  const [calendarYear, setCalendarYear] = useState(() =>
+    Number(getBusinessDateString().slice(0, 4))
+  );
+  const [calendarMonth, setCalendarMonth] = useState(() =>
+    Number(getBusinessDateString().slice(5, 7)) - 1
+  );
 
   const availableSlots = useQuery(
     api.availability.getAvailableSlots,
@@ -47,22 +59,33 @@ export default function BookingForm() {
       ? { serviceId: selectedService._id, date: selectedDate }
       : "skip"
   );
+  const customerVisibleSlots = availableSlots?.filter(
+    (time) => time >= "10:00"
+  );
 
   useEffect(() => {
     loadPaystackScript().catch(() => {});
   }, []);
 
-  const today = new Date();
-  const daysInMonth = new Date(
-    today.getFullYear(),
-    today.getMonth() + 1,
-    0
-  ).getDate();
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).getDay();
+  const currentYear = Number(todayDate.slice(0, 4));
+  const currentMonth = Number(todayDate.slice(5, 7)) - 1;
+  const calendar = getMonthGrid(calendarYear, calendarMonth);
+  const canGoToPreviousMonth =
+    calendarYear > currentYear ||
+    (calendarYear === currentYear && calendarMonth > currentMonth);
 
-  const calendarDays: (number | null)[] = [];
-  for (let i = 0; i < firstDay; i++) calendarDays.push(null);
-  for (let i = 1; i <= daysInMonth; i++) calendarDays.push(i);
+  const changeCalendarMonth = (offset: number) => {
+    const nextMonth = new Date(
+      Date.UTC(calendarYear, calendarMonth + offset, 1)
+    );
+    setCalendarYear(nextMonth.getUTCFullYear());
+    setCalendarMonth(nextMonth.getUTCMonth());
+  };
+
+  const resetCalendarToCurrentMonth = () => {
+    setCalendarYear(currentYear);
+    setCalendarMonth(currentMonth);
+  };
 
   const depositPercentage = Number(depositSetting?.value) || 30;
   const selectedServiceOptions = selectedService ? getServicePriceOptions(selectedService) : [];
@@ -184,6 +207,7 @@ export default function BookingForm() {
                 setSelectedPriceOption(options.length === 1 ? options[0] : null);
                 setSelectedDate("");
                 setSelectedTime("");
+                resetCalendarToCurrentMonth();
                 setCheckoutError("");
                 setStep(2);
               }}
@@ -242,68 +266,84 @@ export default function BookingForm() {
           {(selectedServiceOptions.length === 0 || selectedPriceOption) && (
             <>
           <div className="mb-6 rounded-xl border border-gray-200 p-4">
-            <div className="mb-4 text-center">
-              <span className="text-sm font-medium text-gray-600">
-                {new Date(today.getFullYear(), today.getMonth()).toLocaleDateString("en-US", {
-                  month: "long",
-                  year: "numeric",
-                })}
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => changeCalendarMonth(-1)}
+                disabled={!canGoToPreviousMonth}
+                aria-label="Show previous month"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-gray-700 transition-colors hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                <span aria-hidden="true">←</span>
+              </button>
+              <span className="text-sm font-semibold text-gray-900" aria-live="polite">
+                {calendar.label}
               </span>
+              <button
+                type="button"
+                onClick={() => changeCalendarMonth(1)}
+                aria-label="Show next month"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-gray-700 transition-colors hover:border-rose-300 hover:bg-rose-50"
+              >
+                <span aria-hidden="true">→</span>
+              </button>
             </div>
-            <div className="grid grid-cols-7 gap-1 text-center text-xs">
+            <div className="grid grid-cols-7 gap-1 text-center text-xs" aria-label={`Choose an appointment date in ${calendar.label}`}>
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
                 <div key={d} className="py-2 font-medium text-gray-500">
                   {d}
                 </div>
               ))}
-              {calendarDays.map((day, i) => (
+              {calendar.days.map((day, i) => {
+                const date = day
+                  ? formatCalendarDate(calendarYear, calendarMonth, day)
+                  : "";
+                const isPast = Boolean(day && date < todayDate);
+                return (
                 <button
-                  key={i}
-                  disabled={
-                    !day ||
-                    day < today.getDate()
-                  }
+                  type="button"
+                  key={`${calendarYear}-${calendarMonth}-${i}`}
+                  disabled={!day || isPast}
+                  aria-label={day ? new Date(`${date}T12:00:00+01:00`).toLocaleDateString("en-NG", { dateStyle: "full" }) : undefined}
+                  aria-pressed={Boolean(day && selectedDate === date)}
                   onClick={() => {
-                    if (!day) return;
-                    setSelectedDate(
-                      `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
-                    );
+                    if (!day || isPast) return;
+                    setSelectedDate(date);
                     setSelectedTime("");
                     setCheckoutError("");
                   }}
                   className={`aspect-square rounded-lg p-2 text-sm transition-colors ${
                     !day
                       ? ""
-                      : day < today.getDate()
+                      : isPast
                         ? "text-gray-300"
-                        : selectedDate ===
-                            `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+                        : selectedDate === date
                           ? "bg-rose-600 text-white"
                           : "text-gray-700 hover:bg-rose-50"
                   }`}
                 >
                   {day}
                 </button>
-              ))}
+              )})}
             </div>
           </div>
 
           {selectedDate && (
             <div>
               <h3 className="mb-3 font-medium text-gray-900">Available Times</h3>
-              {availableSlots === undefined ? (
+              {customerVisibleSlots === undefined ? (
                 <div className="grid grid-cols-4 gap-2 sm:grid-cols-6" aria-label="Loading available times">
                   {Array.from({ length: 8 }).map((_, index) => (
                     <div key={index} className="h-10 animate-pulse rounded-lg bg-gray-100" />
                   ))}
                 </div>
-              ) : availableSlots.length === 0 ? (
+              ) : customerVisibleSlots.length === 0 ? (
                 <p className="rounded-lg bg-amber-50 p-4 text-sm text-amber-800" role="status">
                   No times are available on this date. Please choose another day.
                 </p>
               ) : (
                 <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-                {availableSlots.map((time) => (
+                {customerVisibleSlots.map((time) => (
                   <button
                     key={time}
                     onClick={() => {
@@ -349,11 +389,12 @@ export default function BookingForm() {
       {step === 3 && (
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="booking-name" className="mb-1 block text-sm font-medium text-gray-700">
               Full Name
             </label>
             <input
               type="text"
+              id="booking-name"
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
@@ -363,11 +404,12 @@ export default function BookingForm() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="booking-email" className="mb-1 block text-sm font-medium text-gray-700">
               Email
             </label>
             <input
               type="email"
+              id="booking-email"
               value={formData.email}
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
@@ -377,11 +419,12 @@ export default function BookingForm() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="booking-phone" className="mb-1 block text-sm font-medium text-gray-700">
               Phone Number
             </label>
             <input
               type="tel"
+              id="booking-phone"
               value={formData.phone}
               onChange={(e) =>
                 setFormData({ ...formData, phone: e.target.value })
@@ -391,10 +434,11 @@ export default function BookingForm() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="booking-notes" className="mb-1 block text-sm font-medium text-gray-700">
               Notes (optional)
             </label>
             <textarea
+              id="booking-notes"
               value={formData.notes}
               onChange={(e) =>
                 setFormData({ ...formData, notes: e.target.value })

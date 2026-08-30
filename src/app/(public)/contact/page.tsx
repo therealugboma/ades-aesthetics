@@ -21,6 +21,8 @@ export default function ContactPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submissionError, setSubmissionError] = useState("");
+  const [notificationWarning, setNotificationWarning] = useState("");
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -34,6 +36,9 @@ export default function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmissionError("");
+    setNotificationWarning("");
+    let messageSaved = false;
     try {
       await sendMessage({
         name: form.name,
@@ -41,15 +46,34 @@ export default function ContactPage() {
         subject: form.subject,
         message: form.message,
       });
+      messageSaved = true;
 
-      await fetch("/api/email", {
+      const emailResponse = await fetch("/api/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
+      if (!emailResponse.ok) {
+        setNotificationWarning(
+          "Your message was saved, but our email notification is delayed. You can also reach us on WhatsApp for an urgent reply."
+        );
+      }
+
       setSubmitted(true);
       setForm({ name: "", email: "", subject: "", message: "" });
+    } catch {
+      if (messageSaved) {
+        setNotificationWarning(
+          "Your message was saved, but our email notification is delayed. You can also reach us on WhatsApp for an urgent reply."
+        );
+        setSubmitted(true);
+        setForm({ name: "", email: "", subject: "", message: "" });
+      } else {
+        setSubmissionError(
+          "We could not save your message. Please try again or contact us on WhatsApp."
+        );
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -97,15 +121,22 @@ export default function ContactPage() {
                       />
                     </svg>
                     <h3 className="mt-4 text-lg font-semibold text-green-900">
-                      Message Sent!
+                      Message Received!
                     </h3>
                     <p className="mt-2 text-sm text-green-700">
-                      Thank you for reaching out. We&apos;ll get back to you
-                      soon.
+                      Thank you for reaching out. Your message is in the admin dashboard and we&apos;ll get back to you soon.
                     </p>
+                    {notificationWarning && (
+                      <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-800" role="status">
+                        {notificationWarning}
+                      </p>
+                    )}
                     <button
                       type="button"
-                      onClick={() => setSubmitted(false)}
+                      onClick={() => {
+                        setSubmitted(false);
+                        setNotificationWarning("");
+                      }}
                       className="mt-4 text-sm font-medium text-green-800 underline hover:text-green-900"
                     >
                       Send another message
@@ -113,6 +144,11 @@ export default function ContactPage() {
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+                    {submissionError && (
+                      <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">
+                        {submissionError}
+                      </p>
+                    )}
                     <div>
                       <label
                         htmlFor="contact-name"
@@ -342,8 +378,7 @@ export default function ContactPage() {
                         Business Hours
                       </h3>
                       <ul className="mt-1 space-y-1 text-sm text-gray-600">
-                        <li>Monday - Saturday: 10:00 AM - 7:00 PM</li>
-                        <li>Sunday: Closed</li>
+                        <li>Open daily: 10:00 AM - 7:00 PM</li>
                       </ul>
                     </div>
                   </div>

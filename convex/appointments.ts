@@ -4,6 +4,8 @@ import { ConvexError, v } from "convex/values";
 import { requireAdmin } from "./helpers";
 import {
   APPOINTMENT_BUFFER_MINUTES,
+  BUSINESS_CLOSING_MINUTES,
+  BUSINESS_OPENING_MINUTES,
   RESERVATION_TTL_MS,
   appointmentBlocksAvailability,
   bookingDateTimeMs,
@@ -66,8 +68,8 @@ async function validateSlot(
     !isValidBookingDate(args.date) ||
     !Number.isFinite(requestedStart) ||
     requestedStart % 30 !== 0 ||
-    requestedStart < 9 * 60 ||
-    requestedEnd > 19 * 60 ||
+    requestedStart < BUSINESS_OPENING_MINUTES ||
+    requestedEnd > BUSINESS_CLOSING_MINUTES ||
     bookingDateTimeMs(args.date, args.time) <= now
   ) {
     bookingError(

@@ -2,7 +2,7 @@ import { query, mutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
 import { requireAdmin } from "./helpers";
-import { serviceSecretIsValid } from "./lib/payment";
+import { mergePaymentMetadata, serviceSecretIsValid } from "./lib/payment";
 import {
   PAYMENT_CLOSE_GRACE_MS,
   reservationCanFinalize,
@@ -93,8 +93,9 @@ async function finalizePayment(ctx: MutationCtx, args: VerifiedPayment) {
   const updates: { status: "success"; metadata?: string } = {
     status: "success",
   };
-  if (args.metadata !== undefined) {
-    updates.metadata = args.metadata;
+  const mergedMetadata = mergePaymentMetadata(payment.metadata, args.metadata);
+  if (mergedMetadata !== undefined) {
+    updates.metadata = mergedMetadata;
   }
   if (payment.appointmentId) {
     const appointment = await ctx.db.get(payment.appointmentId);
@@ -196,17 +197,39 @@ export const getByReferenceWithOrder = query({
     if (!payment) return null;
 
     let orderItems: number | null = null;
+    let orderProducts: Array<{
+      name: string;
+      quantity: number;
+      price: number;
+    }> = [];
     if (payment.orderId) {
       const items = await ctx.db
         .query("orderItems")
         .withIndex("by_order", (q) => q.eq("orderId", payment.orderId!))
         .collect();
       orderItems = items.reduce((sum, item) => sum + item.quantity, 0);
+      orderProducts = (
+        await Promise.all(
+          items.map(async (item) => {
+            const product = await ctx.db.get(item.productId);
+            if (!product || !("name" in product)) return null;
+            return {
+              name: product.name,
+              quantity: item.quantity,
+              price: item.price,
+            };
+          })
+        )
+      ).filter(
+        (item): item is { name: string; quantity: number; price: number } =>
+          item !== null
+      );
     }
 
     return {
       ...payment,
       orderItems,
+      orderProducts,
     };
   },
 });

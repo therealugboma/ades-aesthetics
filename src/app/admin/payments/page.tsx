@@ -24,15 +24,13 @@ export default function AdminPaymentsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {payments?.map((p: any) => {
-              const meta = p.metadata ? (() => { try { return JSON.parse(p.metadata); } catch { return {}; } })() : {};
+            {payments?.map((p) => {
               return (
               <tr key={p._id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 font-mono text-xs text-gray-900">{p.reference}</td>
                 <td className="px-4 py-3 text-gray-700">₦{p.amount?.toLocaleString()}</td>
                 <td className="px-4 py-3 text-xs text-gray-500">
-                  {meta.subtotal ? `Products ₦${Number(meta.subtotal).toLocaleString()}; ` : ""}
-                  {meta.shippingFee ? `Delivery ₦${Number(meta.shippingFee).toLocaleString()}` : "—"}
+                  {p.orderId ? "Products only; delivery arranged on WhatsApp" : "—"}
                 </td>
                 <td className="px-4 py-3 text-gray-500 text-xs">
                   {p.appointmentId ? "Booking" : p.orderId ? "Order" : "—"}

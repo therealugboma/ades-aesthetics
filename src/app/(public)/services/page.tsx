@@ -1,10 +1,11 @@
-"use client";
+import type { Metadata } from "next";
+import ServiceGrid from "@/components/services/ServiceGrid";
 
-import dynamic from "next/dynamic";
-const ServiceGrid = dynamic(
-  () => import("@/components/services/ServiceGrid"),
-  { ssr: false }
-);
+export const metadata: Metadata = {
+  title: "Beauty Services in Lagos | Ades Aesthetics",
+  description: "Explore premium nail, lash, brow, and skin services from Ades Aesthetics in Lagos.",
+  alternates: { canonical: "/services" },
+};
 
 export default function ServicesPage() {
   return (

@@ -39,10 +39,9 @@ export const list = query({
     await requireAdmin(ctx, args.sessionToken);
     const limit = args.paginationOpts?.numItems ?? 50;
     let q = ctx.db.query("customers").order("desc");
-    if (args.paginationOpts?.cursor) {
-      q = q.filter((q) =>
-        q.lt(q.field("_creationTime"), args.paginationOpts!.cursor! as any)
-      );
+    const cursor = args.paginationOpts?.cursor;
+    if (cursor !== undefined) {
+      q = q.filter((q) => q.lt(q.field("_creationTime"), cursor));
     }
     const customers = await q.take(limit);
     return {

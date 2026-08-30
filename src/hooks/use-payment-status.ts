@@ -7,6 +7,11 @@ export interface VerifiedPaymentStatus {
   amount: number;
   status: "pending" | "success" | "failed" | "abandoned";
   orderItems: number | null;
+  orderProducts: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+  }>;
   metadata: Record<string, unknown>;
 }
 

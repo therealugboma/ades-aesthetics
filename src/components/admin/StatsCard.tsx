@@ -37,7 +37,8 @@ export default function StatsCard({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border-light border-l-4 bg-white p-6 shadow-sm"
+        "rounded-xl border border-border-light border-l-4 bg-white p-6 shadow-sm",
+        accentColors[accentColor]
       )}
     >
       <div className="flex items-start justify-between">

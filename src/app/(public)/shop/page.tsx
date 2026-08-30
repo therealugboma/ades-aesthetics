@@ -1,10 +1,11 @@
-"use client";
+import type { Metadata } from "next";
+import ShopClient from "@/components/shop/ShopClient";
 
-import dynamic from "next/dynamic";
-const ShopClient = dynamic(
-  () => import("@/components/shop/ShopClient"),
-  { ssr: false }
-);
+export const metadata: Metadata = {
+  title: "Beauty Products | Ades Aesthetics",
+  description: "Shop professional beauty products selected by Ades Aesthetics.",
+  alternates: { canonical: "/shop" },
+};
 
 export default function ShopPage() {
   return (

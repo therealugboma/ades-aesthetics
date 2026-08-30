@@ -70,6 +70,7 @@ export async function GET(request: NextRequest) {
           amount: payment.amount,
           status: payment.status,
           orderItems: payment.orderItems,
+          orderProducts: payment.orderProducts,
           metadata: parseMetadata(payment.metadata),
         },
       },

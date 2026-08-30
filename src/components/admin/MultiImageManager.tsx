@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 
 export type ManagedImage =
   | { id: string; kind: "existing"; url: string }
@@ -82,7 +83,14 @@ export default function MultiImageManager({
             return (
               <div key={image.id} className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
                 <div className="relative aspect-square">
-                  <img src={src} alt={`${label} ${index + 1}`} className="h-full w-full object-cover" />
+                  <Image
+                    src={src}
+                    alt={`${label} ${index + 1}`}
+                    fill
+                    sizes="(max-width: 640px) 50vw, 220px"
+                    unoptimized={image.kind === "new"}
+                    className="object-cover"
+                  />
                   {index === 0 && (
                     <span className="absolute left-2 top-2 rounded-full bg-gray-900/80 px-2 py-1 text-[10px] font-medium text-white">
                       Cover

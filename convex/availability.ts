@@ -2,6 +2,8 @@ import { query } from "./_generated/server";
 import { v } from "convex/values";
 import {
   APPOINTMENT_BUFFER_MINUTES,
+  BUSINESS_CLOSING_MINUTES,
+  BUSINESS_OPENING_MINUTES,
   appointmentBlocksAvailability,
   bookingDateTimeMs,
   createAvailableSlots,
@@ -19,8 +21,6 @@ export const getAvailableSlots = query({
       throw new Error("Service not found or inactive");
     }
 
-    const openingHour = 9;
-    const closingHour = 19;
     const slotInterval = 30;
 
     const existingAppointments = await ctx.db
@@ -58,12 +58,10 @@ export const getAvailableSlots = query({
       ...blockedIntervals,
     ];
 
-    const dayStart = openingHour * 60;
-    const dayEnd = closingHour * 60;
     return createAvailableSlots({
       serviceDuration: service.duration,
-      openingMinutes: dayStart,
-      closingMinutes: dayEnd,
+      openingMinutes: BUSINESS_OPENING_MINUTES,
+      closingMinutes: BUSINESS_CLOSING_MINUTES,
       slotInterval,
       bufferMinutes: APPOINTMENT_BUFFER_MINUTES,
       occupiedIntervals,

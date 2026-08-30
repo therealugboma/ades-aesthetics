@@ -1,11 +1,9 @@
-"use client";
+import type { Metadata } from "next";
+import ProductDetailPage from "@/components/shop/ProductDetailClient";
 
-import dynamic from "next/dynamic";
-
-const ProductDetailPage = dynamic(
-  () => import("@/components/shop/ProductDetailClient"),
-  { ssr: false }
-);
+export const metadata: Metadata = {
+  title: "Beauty Product | Ades Aesthetics",
+};
 
 export default function ShopProductPage() {
   return (

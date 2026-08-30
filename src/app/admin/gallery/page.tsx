@@ -3,8 +3,10 @@
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "convex/_generated/api";
 import type { Doc } from "convex/_generated/dataModel";
+import type { Id } from "convex/_generated/dataModel";
 import { useState, useRef } from "react";
 import { useAdminAuth } from "@/lib/admin-auth-context";
+import Image from "next/image";
 
 type GalleryCategory = "nails" | "lashes" | "brows" | "skin" | "all";
 
@@ -82,7 +84,9 @@ export default function AdminGalleryPage() {
           body: file,
         });
         if (!result.ok) throw new Error(`Could not upload ${file.name}`);
-        const { storageId } = (await result.json()) as { storageId?: string };
+        const { storageId } = (await result.json()) as {
+          storageId?: Id<"_storage">;
+        };
         if (!storageId) throw new Error("Image upload failed");
         url = await getStorageUrl({ sessionToken: sessionToken!, storageId });
       }
@@ -137,7 +141,15 @@ export default function AdminGalleryPage() {
                   className="w-full rounded-lg border-2 border-dashed border-gray-300 p-6 text-center hover:border-rose-400 hover:bg-rose-50/50 transition-colors">
                   {preview ? (
                     <div className="flex flex-col items-center gap-2">
-                      <img src={preview} alt="Preview" className="h-40 w-40 rounded-lg object-cover" />
+                      <Image
+                        src={preview}
+                        alt="Preview"
+                        width={160}
+                        height={160}
+                        sizes="160px"
+                        unoptimized={preview.startsWith("blob:")}
+                        className="h-40 w-40 rounded-lg object-cover"
+                      />
                       <span className="text-xs text-gray-500">Click to replace picture</span>
                     </div>
                   ) : (
@@ -189,10 +201,16 @@ export default function AdminGalleryPage() {
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        {images?.map((img: any) => (
+        {images?.map((img) => (
           <div key={img._id} className="group relative rounded-xl border border-gray-200 bg-white overflow-hidden">
-            <div className="aspect-square bg-gray-100">
-              <img src={img.url} alt={img.alt} className="h-full w-full object-cover" />
+            <div className="relative aspect-square bg-gray-100">
+              <Image
+                src={img.url}
+                alt={img.alt}
+                fill
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                className="object-cover"
+              />
             </div>
             <div className="p-3">
               <p className="text-xs text-gray-500 truncate">{img.alt}</p>

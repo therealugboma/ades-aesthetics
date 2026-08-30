@@ -1,11 +1,16 @@
-export const requireAdmin = async (ctx: any, sessionToken: string) => {
+import type { MutationCtx, QueryCtx } from "./_generated/server";
+
+export const requireAdmin = async (
+  ctx: QueryCtx | MutationCtx,
+  sessionToken: string
+) => {
   if (!sessionToken) {
     throw new Error("Unauthorized: session required");
   }
 
   const sessions = await ctx.db
     .query("adminSessions")
-    .withIndex("by_sessionToken", (q: any) => q.eq("sessionToken", sessionToken))
+    .withIndex("by_sessionToken", (q) => q.eq("sessionToken", sessionToken))
     .collect();
 
   if (sessions.length > 0) {
@@ -27,7 +32,7 @@ export const requireAdmin = async (ctx: any, sessionToken: string) => {
   // multi-device session table was deployed.
   const legacyUsers = await ctx.db
     .query("users")
-    .withIndex("by_sessionToken", (q: any) => q.eq("sessionToken", sessionToken))
+    .withIndex("by_sessionToken", (q) => q.eq("sessionToken", sessionToken))
     .collect();
 
   if (legacyUsers.length === 0) {

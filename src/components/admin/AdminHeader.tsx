@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 interface AdminHeaderProps {
   title: string;
   adminName?: string;
@@ -39,9 +41,13 @@ export default function AdminHeader({
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 overflow-hidden rounded-full bg-blush">
               {adminAvatar ? (
-                <img
+                <Image
                   src={adminAvatar}
                   alt={adminName}
+                  width={36}
+                  height={36}
+                  sizes="36px"
+                  unoptimized
                   className="h-full w-full object-cover"
                 />
               ) : (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 interface GalleryItem {
@@ -18,11 +18,37 @@ interface GalleryGridProps {
 export default function GalleryGrid({ images }: GalleryGridProps) {
   const [lightboxImage, setLightboxImage] = useState<GalleryItem | null>(null);
   const [failedImageIds, setFailedImageIds] = useState<Set<string>>(new Set());
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const openerRef = useRef<HTMLButtonElement | null>(null);
   const visibleImages = images.filter(
     (image) =>
       !failedImageIds.has(image._id) &&
       !image.url.startsWith("/images/gallery/")
   );
+
+  useEffect(() => {
+    if (!lightboxImage) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setLightboxImage(null);
+      } else if (event.key === "Tab") {
+        event.preventDefault();
+        closeButtonRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+      openerRef.current?.focus();
+    };
+  }, [lightboxImage]);
 
   if (visibleImages.length === 0) {
     return (
@@ -40,7 +66,10 @@ export default function GalleryGrid({ images }: GalleryGridProps) {
             type="button"
             key={image._id}
             className="relative aspect-[3/4] overflow-hidden rounded-xl bg-rose-50 text-left"
-            onClick={() => setLightboxImage(image)}
+            onClick={(event) => {
+              openerRef.current = event.currentTarget;
+              setLightboxImage(image);
+            }}
           >
             <Image
               src={image.url}
@@ -59,10 +88,14 @@ export default function GalleryGrid({ images }: GalleryGridProps) {
 
       {lightboxImage && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Image preview: ${lightboxImage.alt}`}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4"
           onClick={() => setLightboxImage(null)}
         >
           <button
+            ref={closeButtonRef}
             type="button"
             aria-label="Close image preview"
             className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"

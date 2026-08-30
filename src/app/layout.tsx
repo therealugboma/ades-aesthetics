@@ -3,6 +3,7 @@ import { Playfair_Display, Inter } from "next/font/google";
 import "./globals.css";
 import ConvexClientProvider from "@/lib/convex-provider";
 import { Analytics } from "@vercel/analytics/react";
+import { SITE_URL } from "@/lib/site";
 
 const playfairDisplay = Playfair_Display({
   variable: "--font-heading",
@@ -19,6 +20,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Ades Aesthetics | Premium Beauty Services",
   description:
     "Ades Aesthetics offers premium beauty services in Lagos, Nigeria. Experience luxury nail care, lash extensions, brow styling, and skin treatments by expert aestheticians.",
@@ -52,6 +54,7 @@ export const metadata: Metadata = {
       "Experience luxury beauty services in Lagos, Nigeria. Premium nails, lashes, brows, and skin treatments.",
     type: "website",
     locale: "en_NG",
+    url: "/",
   },
 };
 

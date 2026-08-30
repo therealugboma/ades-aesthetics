@@ -1,6 +1,8 @@
 export const APPOINTMENT_BUFFER_MINUTES = 30;
 export const RESERVATION_TTL_MS = 15 * 60 * 1000;
 export const PAYMENT_CLOSE_GRACE_MS = 2 * 60 * 1000;
+export const BUSINESS_OPENING_MINUTES = 10 * 60;
+export const BUSINESS_CLOSING_MINUTES = 19 * 60;
 
 type AppointmentAvailabilityState = {
   status: "pending" | "confirmed" | "completed" | "cancelled" | "no_show";

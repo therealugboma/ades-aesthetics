@@ -8,7 +8,26 @@ import {
   intervalsOverlapWithBuffer,
   reservationCanFinalize,
 } from "../convex/lib/booking.ts";
-import { serviceSecretIsValid } from "../convex/lib/payment.ts";
+import {
+  mergePaymentMetadata,
+  serviceSecretIsValid,
+} from "../convex/lib/payment.ts";
+
+test("daily availability starts at 10:00 and services finish by 19:00", () => {
+  const slots = createAvailableSlots({
+    serviceDuration: 90,
+    openingMinutes: 10 * 60,
+    closingMinutes: 19 * 60,
+    slotInterval: 30,
+    bufferMinutes: 30,
+    occupiedIntervals: [],
+  });
+
+  assert.equal(slots[0], "10:00");
+  assert.equal(slots.at(-1), "17:30");
+  assert.equal(slots.includes("09:30"), false);
+  assert.equal(slots.includes("18:00"), false);
+});
 
 test("expired unpaid reservations stop blocking appointment slots", () => {
   const now = Date.UTC(2026, 7, 27, 12);
@@ -100,4 +119,20 @@ test("payment finalization requires the configured server-to-server secret", () 
   assert.equal(serviceSecretIsValid("correct-secret", "correct-secret"), true);
   assert.equal(serviceSecretIsValid("wrong-secret", "correct-secret"), false);
   assert.equal(serviceSecretIsValid("correct-secret", undefined), false);
+});
+
+test("Paystack verification metadata does not erase checkout order details", () => {
+  assert.deepEqual(
+    JSON.parse(
+      mergePaymentMetadata(
+        JSON.stringify({ customerName: "Ada", channel: "checkout" }),
+        JSON.stringify({ channel: "paystack" })
+      )
+    ),
+    { customerName: "Ada", channel: "paystack" }
+  );
+  assert.equal(
+    mergePaymentMetadata(JSON.stringify({ customerName: "Ada" }), "{}"),
+    JSON.stringify({ customerName: "Ada" })
+  );
 });

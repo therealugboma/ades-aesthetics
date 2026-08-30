@@ -1,6 +1,7 @@
 import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "./helpers";
+import type { Doc } from "./_generated/dataModel";
 
 export const list = query({
   args: {},
@@ -95,15 +96,31 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.sessionToken);
-    const fields: Partial<typeof args> = { ...args };
-    delete fields.id;
-    delete fields.sessionToken;
-    const updates: Record<string, any> = {};
-    for (const [key, value] of Object.entries(fields)) {
-      if (value !== undefined) {
-        updates[key] = value;
-      }
-    }
+    const updates: Partial<
+      Pick<
+        Doc<"products">,
+        | "name"
+        | "slug"
+        | "description"
+        | "price"
+        | "categoryId"
+        | "imageUrl"
+        | "imageUrls"
+        | "stock"
+        | "isActive"
+        | "isFeatured"
+      >
+    > = {};
+    if (args.name !== undefined) updates.name = args.name;
+    if (args.slug !== undefined) updates.slug = args.slug;
+    if (args.description !== undefined) updates.description = args.description;
+    if (args.price !== undefined) updates.price = args.price;
+    if (args.categoryId !== undefined) updates.categoryId = args.categoryId;
+    if (args.imageUrl !== undefined) updates.imageUrl = args.imageUrl;
+    if (args.imageUrls !== undefined) updates.imageUrls = args.imageUrls;
+    if (args.stock !== undefined) updates.stock = args.stock;
+    if (args.isActive !== undefined) updates.isActive = args.isActive;
+    if (args.isFeatured !== undefined) updates.isFeatured = args.isFeatured;
     if (Object.keys(updates).length === 0) {
       throw new Error("No fields to update");
     }

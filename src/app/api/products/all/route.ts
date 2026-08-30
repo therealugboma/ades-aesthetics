@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { adminSessionToken } from "@/lib/admin-token";
 
 async function convexQuery(path: string, args: Record<string, unknown>) {
   const url = process.env.NEXT_PUBLIC_CONVEX_URL;
@@ -15,7 +16,11 @@ async function convexQuery(path: string, args: Record<string, unknown>) {
 
 export async function GET(request: NextRequest) {
   try {
-    const products = await convexQuery("products:listAll", {});
+    const sessionToken = adminSessionToken(request);
+    if (!sessionToken) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    const products = await convexQuery("products:listAll", { sessionToken });
     return NextResponse.json({ products: products || [] });
   } catch (error) {
     console.error("Products listAll error:", error);

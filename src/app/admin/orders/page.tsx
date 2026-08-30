@@ -4,6 +4,9 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { useState } from "react";
 import { useAdminAuth } from "@/lib/admin-auth-context";
+import type { Doc } from "convex/_generated/dataModel";
+
+type OrderStatus = Doc<"orders">["status"];
 
 export default function AdminOrdersPage() {
   const { sessionToken } = useAdminAuth();
@@ -12,7 +15,7 @@ export default function AdminOrdersPage() {
   const [filter, setFilter] = useState("all");
 
   const filtered =
-    filter === "all" ? orders : orders?.filter((o: any) => o.status === filter);
+    filter === "all" ? orders : orders?.filter((order) => order.status === filter);
 
   return (
     <div>
@@ -39,7 +42,7 @@ export default function AdminOrdersPage() {
             <tr>
               <th className="px-4 py-3 text-left font-medium text-gray-500">Order ID</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500">Products</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-500">Delivery</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-500">Delivery Arrangement</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500">Total</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500">Status</th>
               <th className="px-4 py-3 text-left font-medium text-gray-500">Actions</th>
@@ -59,11 +62,11 @@ export default function AdminOrdersPage() {
                   </td>
                 </tr>
             ) : (
-              filtered?.map((o: any) => (
+              filtered?.map((o) => (
                 <tr key={o._id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-900 font-mono text-xs">#{o._id.slice(-8)}</td>
                   <td className="px-4 py-3 text-gray-700">₦{(o.subtotal ?? (o.totalAmount ?? 0) - (o.deliveryFee ?? 0)).toLocaleString()}</td>
-                  <td className="px-4 py-3 text-gray-700">{o.deliveryFee ? `₦${o.deliveryFee.toLocaleString()}` : "—"}</td>
+                  <td className="px-4 py-3 text-gray-700">WhatsApp</td>
                   <td className="px-4 py-3 font-medium text-gray-900">₦{o.totalAmount?.toLocaleString()}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2 py-1 text-xs font-medium ${
@@ -80,7 +83,7 @@ export default function AdminOrdersPage() {
                         await updateStatus({
                           sessionToken: sessionToken!,
                           orderId: o._id,
-                          status: e.target.value as any,
+                          status: e.target.value as OrderStatus,
                         });
                       }}
                       className="rounded border border-gray-300 px-2 py-1 text-xs"

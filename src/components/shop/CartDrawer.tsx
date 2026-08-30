@@ -2,6 +2,7 @@
 
 import { formatPrice } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 interface CartItem {
   productId: string;
@@ -49,6 +50,11 @@ export default function CartDrawer({
       />
 
       <div
+        role={isOpen ? "dialog" : undefined}
+        aria-modal={isOpen ? true : undefined}
+        aria-label={isOpen ? "Shopping cart" : undefined}
+        aria-hidden={!isOpen}
+        inert={!isOpen}
         className={`fixed top-0 right-0 z-[70] flex h-full w-full max-w-md flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
@@ -58,7 +64,9 @@ export default function CartDrawer({
             Shopping Cart
           </h2>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close shopping cart"
             className="rounded-md p-2 text-gray-500 transition-colors hover:bg-gray-100"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -75,6 +83,7 @@ export default function CartDrawer({
               </svg>
               <p className="mt-4 text-sm text-gray-500">Your cart is empty</p>
               <button
+                type="button"
                 onClick={onClose}
                 className="mt-4 text-sm font-medium text-rose-600 hover:text-rose-700"
               >
@@ -90,9 +99,12 @@ export default function CartDrawer({
                 >
                   <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-50">
                     {item.imageUrl ? (
-                      <img
+                      <Image
                         src={item.imageUrl}
                         alt={item.name}
+                        width={80}
+                        height={80}
+                        sizes="80px"
                         className="h-full w-full object-cover"
                       />
                     ) : (
@@ -114,6 +126,8 @@ export default function CartDrawer({
                     <div className="mt-auto flex items-center justify-between pt-2">
                       <div className="flex items-center gap-2">
                         <button
+                          type="button"
+                          aria-label={`Decrease ${item.name} quantity`}
                           onClick={() =>
                             onUpdateQuantity(
                               item.productId,
@@ -128,6 +142,8 @@ export default function CartDrawer({
                           {item.quantity}
                         </span>
                         <button
+                          type="button"
+                          aria-label={`Increase ${item.name} quantity`}
                           onClick={() =>
                             onUpdateQuantity(item.productId, item.quantity + 1)
                           }
@@ -137,6 +153,7 @@ export default function CartDrawer({
                         </button>
                       </div>
                       <button
+                        type="button"
                         onClick={() => onRemoveItem(item.productId)}
                         className="text-xs text-gray-400 transition-colors hover:text-red-500"
                       >
@@ -159,6 +176,7 @@ export default function CartDrawer({
               </span>
             </div>
             <button
+              type="button"
               onClick={handleCheckout}
               className="flex w-full items-center justify-center rounded-full bg-rose-600 py-3 text-sm font-medium text-white transition-all duration-200 hover:bg-rose-700 hover:shadow-lg"
             >

@@ -1,10 +1,11 @@
-"use client";
+import type { Metadata } from "next";
+import BookingForm from "@/components/booking/BookingForm";
 
-import dynamic from "next/dynamic";
-const BookingForm = dynamic(
-  () => import("@/components/booking/BookingForm"),
-  { ssr: false }
-);
+export const metadata: Metadata = {
+  title: "Book a Beauty Appointment | Ades Aesthetics",
+  description: "Book an Ades Aesthetics appointment online for any future date from 10 AM to 7 PM.",
+  alternates: { canonical: "/booking" },
+};
 
 export default function BookingPage() {
   return (

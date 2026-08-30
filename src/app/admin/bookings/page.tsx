@@ -4,6 +4,9 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { useState } from "react";
 import { useAdminAuth } from "@/lib/admin-auth-context";
+import type { Doc } from "convex/_generated/dataModel";
+
+type AppointmentStatus = Doc<"appointments">["status"];
 
 export default function AdminBookingsPage() {
   const { sessionToken } = useAdminAuth();
@@ -15,7 +18,7 @@ export default function AdminBookingsPage() {
   const [filter, setFilter] = useState<string>("all");
 
   const filtered =
-    filter === "all" ? appointments : appointments?.filter((a: any) => a.status === filter);
+    filter === "all" ? appointments : appointments?.filter((a) => a.status === filter);
 
   return (
     <div>
@@ -59,7 +62,7 @@ export default function AdminBookingsPage() {
                 </td>
               </tr>
             ) : (
-              filtered?.map((a: any) => (
+              filtered?.map((a) => (
                 <tr key={a._id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-900">{a.customer?.name ?? "Unknown"}</td>
                   <td className="px-4 py-3 text-gray-700">
@@ -82,7 +85,7 @@ export default function AdminBookingsPage() {
                         await updateStatus({
                           sessionToken: sessionToken!,
                           id: a._id,
-                          status: e.target.value as any,
+                          status: e.target.value as AppointmentStatus,
                         });
                       }}
                       className="rounded border border-gray-300 px-2 py-1 text-xs"

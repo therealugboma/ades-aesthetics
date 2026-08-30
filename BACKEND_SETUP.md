@@ -13,6 +13,7 @@ Next.js / Vercel:
 - `PAYSTACK_SECRET_KEY`: Paystack secret used only by route handlers
 - `PAYMENT_FINALIZE_SECRET`: Random server-to-server secret shared with Convex
 - `ADMIN_JWT_SECRET`: Long random value used to sign the HTTP-only admin cookie; required in production
+- `NEXT_PUBLIC_SITE_URL`: Canonical public site URL (`https://www.adesaesthetics.store` in production)
 
 Convex deployment:
 
@@ -42,3 +43,10 @@ The Next.js app and Convex functions must be deployed together. The booking sche
 expiring appointment holds, and payment finalization verifies the Paystack amount and currency
 before confirming an appointment. Deploy the Convex schema/functions to the intended environment
 before deploying the matching Next.js build.
+
+## Product delivery
+
+Product checkout charges only for the selected products. After Paystack confirms
+the payment, the customer receives a prefilled WhatsApp link containing the
+verified order reference, product quantities, and total. Delivery method and cost
+are then agreed directly with Ades Aesthetics; there is no Sendbox dependency.

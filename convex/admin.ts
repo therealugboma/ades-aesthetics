@@ -2,6 +2,7 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { hashPassword, verifyPassword } from "./password";
 import { requireAdmin } from "./helpers";
+import type { Doc } from "./_generated/dataModel";
 
 const MAX_SESSION_MS = 24 * 60 * 60 * 1000;
 const MAX_CONCURRENT_SESSIONS = 12;
@@ -79,7 +80,9 @@ export const updateAdmin = mutation({
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.sessionToken);
-    const updates: Record<string, any> = {};
+    const updates: Partial<
+      Pick<Doc<"users">, "email" | "name" | "passwordHash">
+    > = {};
     if (args.email) updates.email = args.email;
     if (args.name) updates.name = args.name;
     if (args.password) updates.passwordHash = await hashPassword(args.password);

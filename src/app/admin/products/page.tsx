@@ -10,6 +10,7 @@ import MultiImageManager, {
   type ManagedImage,
 } from "@/components/admin/MultiImageManager";
 import { useAdminAuth } from "@/lib/admin-auth-context";
+import Image from "next/image";
 
 interface ProductForm {
   name: string;
@@ -99,7 +100,9 @@ export default function AdminProductsPage() {
         body: image.file,
       });
       if (!result.ok) throw new Error(`Could not upload ${image.file.name}`);
-      const { storageId } = (await result.json()) as { storageId?: string };
+      const { storageId } = (await result.json()) as {
+        storageId?: Id<"_storage">;
+      };
       if (!storageId) throw new Error(`Upload failed for ${image.file.name}`);
       const url = await getStorageUrl({ sessionToken: sessionToken!, storageId });
       if (!url) throw new Error(`Could not save ${image.file.name}`);
@@ -280,7 +283,16 @@ export default function AdminProductsPage() {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs overflow-hidden">
-                      {(p.imageUrls?.[0] || p.imageUrl) ? <img src={p.imageUrls?.[0] || p.imageUrl} alt="" className="h-full w-full object-cover" /> : "IMG"}
+                      {(p.imageUrls?.[0] || p.imageUrl) ? (
+                        <Image
+                          src={p.imageUrls?.[0] || p.imageUrl}
+                          alt=""
+                          width={40}
+                          height={40}
+                          sizes="40px"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : "IMG"}
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">{p.name}</p>

@@ -8,11 +8,13 @@ export const metadata: Metadata = {
   title: "Ades Aesthetics | Premium Beauty Services in Lagos",
   description:
     "Ades Aesthetics offers premium beauty services in Lagos, Nigeria. Expert nail care, lash extensions, brow styling, and skin treatments in a relaxing atmosphere.",
+  alternates: { canonical: "/" },
   openGraph: {
     title: "Ades Aesthetics | Premium Beauty Services in Lagos",
     description:
       "Premium beauty services in Lagos, Nigeria. Book your appointment today.",
     type: "website",
+    url: "/",
   },
 };
 
@@ -305,8 +307,7 @@ export default function HomePage() {
                         Business Hours
                       </h3>
                       <ul className="mt-1 space-y-1 text-sm text-gray-600">
-                        <li>Monday - Saturday: 10:00 AM - 7:00 PM</li>
-                        <li>Sunday: Closed</li>
+                        <li>Open daily: 10:00 AM - 7:00 PM</li>
                       </ul>
                     </div>
                   </div>

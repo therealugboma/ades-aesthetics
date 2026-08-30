@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
 import { useState } from "react";
 import { useAdminAuth } from "@/lib/admin-auth-context";
+import type { Doc } from "convex/_generated/dataModel";
 
 export default function AdminMessagesPage() {
   const { sessionToken } = useAdminAuth();
@@ -13,9 +14,9 @@ export default function AdminMessagesPage() {
   );
   const markRead = useMutation(api.contactMessages.markRead);
   const removeMessage = useMutation(api.contactMessages.remove);
-  const [selected, setSelected] = useState<any>(null);
+  const [selected, setSelected] = useState<Doc<"contactMessages"> | null>(null);
 
-  const unread = messages?.filter((m: any) => !m.isRead).length ?? 0;
+  const unread = messages?.filter((message) => !message.isRead).length ?? 0;
 
   return (
     <div>
@@ -34,7 +35,7 @@ export default function AdminMessagesPage() {
           {messages?.length === 0 && (
             <p className="p-6 text-sm text-gray-500 text-center">No messages yet</p>
           )}
-          {messages?.map((m: any) => (
+          {messages?.map((m) => (
             <button
               key={m._id}
               onClick={() => {

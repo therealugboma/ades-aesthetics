@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "./helpers";
+import type { Doc } from "./_generated/dataModel";
 
 const priceOptionValidator = v.object({
   label: v.string(),
@@ -137,15 +138,32 @@ export const update = mutation({
     const current = await ctx.db.get(args.id);
     if (!current) throw new Error("Service not found");
     validatePriceOptions(args.price ?? current.price, args.priceOptions ?? current.priceOptions);
-    const fields: Partial<typeof args> = { ...args };
-    delete fields.id;
-    delete fields.sessionToken;
-    const updates: Record<string, any> = {};
-    for (const [key, value] of Object.entries(fields)) {
-      if (value !== undefined) {
-        updates[key] = value;
-      }
-    }
+    const updates: Partial<
+      Pick<
+        Doc<"services">,
+        | "name"
+        | "slug"
+        | "description"
+        | "price"
+        | "duration"
+        | "category"
+        | "imageUrl"
+        | "imageUrls"
+        | "priceOptions"
+        | "isActive"
+        | "sortOrder"
+      >
+    > = {};
+    if (args.name !== undefined) updates.name = args.name;
+    if (args.slug !== undefined) updates.slug = args.slug;
+    if (args.description !== undefined) updates.description = args.description;
+    if (args.price !== undefined) updates.price = args.price;
+    if (args.duration !== undefined) updates.duration = args.duration;
+    if (args.category !== undefined) updates.category = args.category;
+    if (args.imageUrl !== undefined) updates.imageUrl = args.imageUrl;
+    if (args.imageUrls !== undefined) updates.imageUrls = args.imageUrls;
+    if (args.isActive !== undefined) updates.isActive = args.isActive;
+    if (args.sortOrder !== undefined) updates.sortOrder = args.sortOrder;
     if (args.priceOptions) {
       updates.priceOptions = args.priceOptions.map((option) => ({
         label: option.label.trim(),

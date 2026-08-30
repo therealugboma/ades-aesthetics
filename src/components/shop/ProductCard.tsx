@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { useCartStore } from "@/lib/cart-store";
 import { formatPrice } from "@/lib/utils";
 
@@ -22,7 +22,6 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const router = useRouter();
   const addItem = useCartStore((s) => s.addItem);
   const coverImage = product.imageUrls?.[0] || product.imageUrl;
 
@@ -39,9 +38,10 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <div className="group overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
-      <div
-        className="relative h-56 bg-gradient-to-br from-rose-50 to-pink-50 cursor-pointer"
-        onClick={() => router.push(`/shop/${product.slug}`)}
+      <Link
+        href={`/shop/${product.slug}`}
+        className="relative block h-56 bg-gradient-to-br from-rose-50 to-pink-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600"
+        aria-label={`View ${product.name}`}
       >
         {coverImage ? (
           <Image
@@ -71,13 +71,12 @@ export default function ProductCard({ product }: ProductCardProps) {
             {product.imageUrls!.length} photos
           </span>
         )}
-      </div>
+      </Link>
       <div className="p-5">
-        <h3
-          className="font-heading text-lg font-semibold text-gray-900 cursor-pointer hover:text-rose-600 transition-colors"
-          onClick={() => router.push(`/shop/${product.slug}`)}
-        >
-          {product.name}
+        <h3 className="font-heading text-lg font-semibold text-gray-900">
+          <Link href={`/shop/${product.slug}`} className="transition-colors hover:text-rose-600">
+            {product.name}
+          </Link>
         </h3>
         {product.description && (
           <p className="mt-1 line-clamp-2 text-sm text-gray-500">
@@ -89,6 +88,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             {formatPrice(product.price)}
           </span>
           <button
+            type="button"
             onClick={handleAddToCart}
             disabled={product.stock <= 0}
             className="rounded-full bg-rose-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"

@@ -5,16 +5,36 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
 import { usePaymentStatus } from "@/hooks/use-payment-status";
+import { buildWhatsAppUrl } from "@/lib/site";
 
 function OrderSuccessContent() {
   const searchParams = useSearchParams();
   const ref = searchParams.get("ref");
   const { payment, verifying, error, retry } = usePaymentStatus(ref);
   const isConfirmed = payment?.status === "success";
-  const deliveryAddress =
-    typeof payment?.metadata.deliveryAddress === "string"
-      ? payment.metadata.deliveryAddress
-      : "";
+  const customerName =
+    typeof payment?.metadata.customerName === "string"
+      ? payment.metadata.customerName
+      : "Customer";
+  const orderLines = payment?.orderProducts?.length
+    ? payment.orderProducts.map(
+        (item) =>
+          `- ${item.name} x${item.quantity} — ${formatPrice(item.price * item.quantity)}`
+      )
+    : ["- Order items are attached to this payment reference"];
+  const deliveryMessage = payment
+    ? [
+        "Hello Ades Aesthetics, I have completed payment for my order.",
+        "",
+        `Order reference: ${payment.reference}`,
+        `Customer: ${customerName}`,
+        "Items:",
+        ...orderLines,
+        `Total paid: ${formatPrice(payment.amount)}`,
+        "",
+        "Please help me arrange the delivery option that suits me best.",
+      ].join("\n")
+    : "";
 
   return (
     <main className="flex-1 bg-gray-50">
@@ -30,7 +50,7 @@ function OrderSuccessContent() {
           </h1>
           <p className="mt-4 text-lg text-gray-600">
             {isConfirmed
-              ? "Thank you for your purchase. We’re preparing your order now."
+              ? "Your payment is confirmed. Arrange your preferred delivery option with us on WhatsApp."
               : verifying
                 ? "Paystack is finalizing your payment. This page will update automatically."
                 : error || "Paystack has not returned a completed payment yet."}
@@ -78,17 +98,24 @@ function OrderSuccessContent() {
           </dl>
         </div>
 
-        {isConfirmed ? <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-6">
-          <h3 className="text-base font-semibold text-blue-900">Delivery Information</h3>
-          <p className="mt-2 text-sm text-blue-800">
-            Your order will be delivered within 2-3 business days. You will receive a tracking link via email once your order is dispatched.
-          </p>
-          {deliveryAddress && (
-            <p className="mt-2 text-sm text-blue-800">
-              <span className="font-medium">Address:</span> {deliveryAddress}
+        {isConfirmed ? (
+          <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-6">
+            <h3 className="text-base font-semibold text-green-900">
+              Arrange Delivery on WhatsApp
+            </h3>
+            <p className="mt-2 text-sm text-green-800">
+              Your verified order reference and product details are already included in the message.
             </p>
-          )}
-        </div> : !verifying ? (
+            <a
+              href={buildWhatsAppUrl(deliveryMessage)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-green-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700 sm:w-auto"
+            >
+              Message Us to Arrange Delivery
+            </a>
+          </div>
+        ) : !verifying ? (
           <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
             <p className="font-semibold">Do not make another payment yet.</p>
             <p className="mt-2">Paystack will confirm a completed payment automatically.</p>

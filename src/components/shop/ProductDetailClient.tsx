@@ -73,7 +73,7 @@ export default function ProductDetailClient() {
       price: product.price,
       imageUrl: coverImage,
       stock: product.stock,
-    });
+    }, quantity);
     setCartOpen(true);
   };
 
@@ -167,6 +167,7 @@ export default function ProductDetailClient() {
                 <div className="mt-2 flex items-center gap-3">
                   <button
                     type="button"
+                    aria-label="Decrease quantity"
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
                     className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50"
                   >
@@ -175,6 +176,7 @@ export default function ProductDetailClient() {
                   <span className="w-12 text-center text-sm font-medium text-gray-900">{quantity}</span>
                   <button
                     type="button"
+                    aria-label="Increase quantity"
                     onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
                     className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50"
                   >

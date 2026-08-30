@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
-import type { Doc } from "convex/_generated/dataModel";
+import type { Doc, Id } from "convex/_generated/dataModel";
 import MultiImageManager, {
   existingManagedImages,
   releaseManagedImagePreviews,
@@ -11,6 +11,7 @@ import MultiImageManager, {
 } from "@/components/admin/MultiImageManager";
 import { useAdminAuth } from "@/lib/admin-auth-context";
 import { getServicePriceLabel } from "@/lib/service-pricing";
+import Image from "next/image";
 
 const categories = ["nails", "lashes", "brows", "skin", "other"] as const;
 type ServiceCategory = (typeof categories)[number];
@@ -123,7 +124,9 @@ export default function AdminServicesPage() {
         body: image.file,
       });
       if (!response.ok) throw new Error(`Could not upload ${image.file.name}`);
-      const { storageId } = (await response.json()) as { storageId?: string };
+      const { storageId } = (await response.json()) as {
+        storageId?: Id<"_storage">;
+      };
       if (!storageId) throw new Error(`Upload failed for ${image.file.name}`);
       const url = await getStorageUrl({ sessionToken: sessionToken!, storageId });
       if (!url) throw new Error(`Could not save ${image.file.name}`);
@@ -313,7 +316,18 @@ export default function AdminServicesPage() {
                 <tr key={service._id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-gray-100 text-xs text-gray-400">{cover ? <img src={cover} alt="" className="h-full w-full object-cover" /> : "IMG"}</div>
+                      <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-gray-100 text-xs text-gray-400">
+                        {cover ? (
+                          <Image
+                            src={cover}
+                            alt=""
+                            width={40}
+                            height={40}
+                            sizes="40px"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : "IMG"}
+                      </div>
                       <div>
                         <p className="font-medium text-gray-900">{service.name}</p>
                         <p className="text-xs text-gray-500">{imageCount} picture{imageCount === 1 ? "" : "s"}</p>

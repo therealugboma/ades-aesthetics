@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "./helpers";
+import type { Doc } from "./_generated/dataModel";
 
 export const list = query({
   args: {
@@ -85,15 +86,17 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.sessionToken);
-    const fields: Partial<typeof args> = { ...args };
-    delete fields.id;
-    delete fields.sessionToken;
-    const updates: Record<string, any> = {};
-    for (const [key, value] of Object.entries(fields)) {
-      if (value !== undefined) {
-        updates[key] = value;
-      }
-    }
+    const updates: Partial<
+      Pick<
+        Doc<"galleryImages">,
+        "url" | "alt" | "category" | "isFeatured" | "sortOrder"
+      >
+    > = {};
+    if (args.url !== undefined) updates.url = args.url;
+    if (args.alt !== undefined) updates.alt = args.alt;
+    if (args.category !== undefined) updates.category = args.category;
+    if (args.isFeatured !== undefined) updates.isFeatured = args.isFeatured;
+    if (args.sortOrder !== undefined) updates.sortOrder = args.sortOrder;
     if (Object.keys(updates).length === 0) {
       throw new Error("No fields to update");
     }

@@ -25,8 +25,8 @@ export default function AdminSettingsPage() {
         await updateSetting({ sessionToken: sessionToken!, key, value });
       }
       setSaved(true);
-    } catch (err: any) {
-      alert(err.message);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Could not save settings");
     } finally {
       setSaving(false);
     }
@@ -43,8 +43,6 @@ export default function AdminSettingsPage() {
     { key: "instagram", label: "Instagram Handle" },
     { key: "deposit_percentage", label: "Deposit Percentage (%)" },
   ];
-
-  const currentValues = { ...settings, ...form };
 
   return (
     <div>
