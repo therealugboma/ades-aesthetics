@@ -7,6 +7,10 @@ import {
   PAYMENT_CLOSE_GRACE_MS,
   reservationCanFinalize,
 } from "./lib/booking";
+import {
+  orderReservationCanFinalize,
+  releasePendingOrderReservation,
+} from "./lib/order";
 
 export const create = mutation({
   args: {
@@ -106,6 +110,15 @@ async function finalizePayment(ctx: MutationCtx, args: VerifiedPayment) {
       });
     }
   }
+  if (payment.orderId) {
+    const order = await ctx.db.get(payment.orderId);
+    if (!order || !orderReservationCanFinalize(order)) {
+      throw new ConvexError({
+        code: "RESERVATION_UNAVAILABLE",
+        message: "This order can no longer be completed.",
+      });
+    }
+  }
 
   await ctx.db.patch(payment._id, updates);
   if (payment.appointmentId) {
@@ -115,7 +128,10 @@ async function finalizePayment(ctx: MutationCtx, args: VerifiedPayment) {
     });
   }
   if (payment.orderId) {
-    await ctx.db.patch(payment.orderId, { status: "paid" });
+    await ctx.db.patch(payment.orderId, {
+      status: "paid",
+      expiresAt: undefined,
+    });
   }
   return payment._id;
 }
@@ -157,9 +173,15 @@ export const releaseReservation = mutation({
       .withIndex("by_reference", (q) => q.eq("reference", args.reference))
       .first();
 
-    if (!payment || payment.status !== "pending" || !payment.appointmentId) {
+    if (!payment || payment.status !== "pending") {
       return { released: false };
     }
+
+    if (payment.orderId) {
+      return await releasePendingOrderReservation(ctx, payment.orderId);
+    }
+
+    if (!payment.appointmentId) return { released: false };
 
     const appointment = await ctx.db.get(payment.appointmentId);
     if (!appointment || appointment.status !== "pending") {

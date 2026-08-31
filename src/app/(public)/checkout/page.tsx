@@ -19,6 +19,8 @@ export default function CheckoutPage() {
   const router = useRouter();
   const items = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
+  const removeItem = useCartStore((state) => state.removeItem);
   const [step, setStep] = useState<CheckoutStep>("details");
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
@@ -62,6 +64,16 @@ export default function CheckoutPage() {
 
     setIsProcessing(true);
     setCheckoutError("");
+    let checkoutReference: string | undefined;
+
+    const releaseCheckout = (reference: string) => {
+      void fetch("/api/checkout/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reference }),
+        keepalive: true,
+      }).catch(() => {});
+    };
 
     try {
       await loadPaystackScript();
@@ -81,12 +93,33 @@ export default function CheckoutPage() {
         reference?: string;
         amount?: number;
         error?: string;
+        code?: string;
+        productId?: string;
+        availableStock?: number;
       };
       if (!response.ok || !data.reference || !data.amount) {
-        setCheckoutError(data.error || "Checkout failed. Please try again.");
+        if (
+          data.productId &&
+          typeof data.availableStock === "number" &&
+          (data.code === "INSUFFICIENT_STOCK" ||
+            data.code === "PRODUCT_UNAVAILABLE")
+        ) {
+          if (data.availableStock > 0) {
+            updateQuantity(data.productId, data.availableStock);
+          } else {
+            removeItem(data.productId);
+          }
+          setCheckoutError(
+            `${data.error || "The available stock changed."} Your cart has been updated.`
+          );
+        } else {
+          setCheckoutError(data.error || "Checkout failed. Please try again.");
+        }
         setIsProcessing(false);
         return;
       }
+
+      checkoutReference = data.reference;
 
       initializePaystackPayment({
         email: customer.email,
@@ -96,9 +129,13 @@ export default function CheckoutPage() {
           clearCart();
           router.push(`/order/success?ref=${encodeURIComponent(data.reference!)}`);
         },
-        onClose: () => setIsProcessing(false),
+        onClose: () => {
+          releaseCheckout(data.reference!);
+          setIsProcessing(false);
+        },
       });
     } catch {
+      if (checkoutReference) releaseCheckout(checkoutReference);
       setCheckoutError(
         "We could not open the secure payment window. Please try again."
       );

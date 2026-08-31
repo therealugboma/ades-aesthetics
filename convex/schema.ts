@@ -84,7 +84,8 @@ export default defineSchema({
     metadata: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_reference", ["reference"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_order", ["orderId"]),
 
   galleryImages: defineTable({
     url: v.string(),
@@ -136,6 +137,7 @@ export default defineSchema({
     deliveryCost: v.optional(v.number()),
     deliveryAddress: v.string(),
     deliveryNotes: v.optional(v.string()),
+    expiresAt: v.optional(v.number()),
     createdAt: v.number(),
   }).index("by_customer", ["customerId"])
     .index("by_status", ["status"]),

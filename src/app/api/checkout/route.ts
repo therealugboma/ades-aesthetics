@@ -1,19 +1,8 @@
+import { ConvexHttpClient } from "convex/browser";
 import { NextRequest, NextResponse } from "next/server";
-
-async function convexMutation(path: string, args: Record<string, unknown>) {
-  const url = process.env.NEXT_PUBLIC_CONVEX_URL;
-  if (!url) throw new Error("Convex not configured");
-  const res = await fetch(`${url}/api/mutation`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path, args }),
-  });
-  const data = await res.json();
-  if (data.status !== "success") {
-    throw new Error(data.message || `Failed: ${path}`);
-  }
-  return data.value;
-}
+import { api } from "convex/_generated/api";
+import type { Id } from "convex/_generated/dataModel";
+import { getCheckoutFailure } from "@/lib/checkout-errors";
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,55 +25,47 @@ export async function POST(request: NextRequest) {
       )
     ) {
       return NextResponse.json(
-        { error: "Please enter valid customer details and cart quantities." },
+        {
+          code: "INVALID_CART",
+          error: "Please enter valid customer details and cart quantities.",
+        },
         { status: 400 }
       );
     }
 
-    const reference = `ADE-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-    const fullName = customer.fullName.trim();
-    const email = customer.email.trim().toLowerCase();
-    const phone = customer.phone.trim();
+    const url = process.env.NEXT_PUBLIC_CONVEX_URL;
+    if (!url) throw new Error("Convex not configured");
 
-    // 1. Find or create customer
-    const customerId = await convexMutation("customers:getOrCreate", {
-      name: fullName,
-      email,
-      phone,
-    });
+    const reference = `ADE-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)
+      .toUpperCase()}`;
+    const convex = new ConvexHttpClient(url);
 
-    // 2. Create order (validates stock + deducts)
-    const order = (await convexMutation("orders:create", {
-      customerId,
-      items: items.map((item: { productId: string; quantity: number }) => ({
-        productId: item.productId,
-        quantity: item.quantity,
-      })),
-      deliveryAddress: "Arrange with customer via WhatsApp",
-    })) as { orderId: string; totalAmount: number };
+    // Cleanup is deliberately a separate transaction. It repairs expired
+    // product holds even when the new cart later fails validation.
+    await convex.mutation(api.orders.releaseExpiredReservations, {});
+    const checkout = await convex.mutation(
+      api.orders.createCheckout,
+      {
+        items: items.map((item: { productId: string; quantity: number }) => ({
+          productId: item.productId as Id<"products">,
+          quantity: item.quantity,
+        })),
+        name: customer.fullName.trim(),
+        email: customer.email.trim().toLowerCase(),
+        phone: customer.phone.trim(),
+        reference,
+      }
+    );
 
-    // 3. Create pending payment record
-    await convexMutation("payments:create", {
-      reference,
-      orderId: order.orderId,
-      amount: order.totalAmount,
-      currency: "NGN",
-      metadata: JSON.stringify({
-        customerName: fullName,
-        customerEmail: email,
-        customerPhone: phone,
-        deliveryMethod: "WhatsApp",
-      }),
-    });
-
-    return NextResponse.json({ reference, amount: order.totalAmount });
+    return NextResponse.json({ reference, amount: checkout.amount });
   } catch (error) {
+    const failure = getCheckoutFailure(error);
     console.error("Checkout failed", {
+      code: failure.body.code,
       message: error instanceof Error ? error.message : "Unknown error",
     });
-    return NextResponse.json(
-      { error: "Checkout failed. Please review your cart and try again." },
-      { status: 500 }
-    );
+    return NextResponse.json(failure.body, { status: failure.status });
   }
 }
