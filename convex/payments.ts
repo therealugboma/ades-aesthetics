@@ -4,8 +4,16 @@ import { ConvexError, v } from "convex/values";
 import { requireAdmin } from "./helpers";
 import { mergePaymentMetadata, serviceSecretIsValid } from "./lib/payment";
 import {
+  APPOINTMENT_BUFFER_MINUTES,
+  BUSINESS_CLOSING_MINUTES,
+  BUSINESS_OPENING_MINUTES,
   PAYMENT_CLOSE_GRACE_MS,
+  appointmentBlocksAvailability,
+  bookingDateTimeMs,
+  intervalsOverlapWithBuffer,
+  isValidBookingDate,
   reservationCanFinalize,
+  timeToMinutes,
 } from "./lib/booking";
 import {
   orderReservationCanFinalize,
@@ -73,6 +81,163 @@ type VerifiedPayment = {
   metadata?: string;
 };
 
+function parsePaymentMetadata(value?: string) {
+  if (!value) return {};
+  try {
+    return JSON.parse(value) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+async function restoreVerifiedAppointment(
+  ctx: MutationCtx,
+  payment: {
+    amount: number;
+    metadata?: string;
+  }
+) {
+  const metadata = parsePaymentMetadata(payment.metadata);
+  const customerName = metadata.customerName;
+  const customerEmail = metadata.customerEmail;
+  const customerPhone = metadata.customerPhone;
+  const serviceName = metadata.serviceName;
+  const serviceOptionLabel = metadata.serviceOptionLabel;
+  const date = metadata.date;
+  const time = metadata.time;
+  const totalAmount = metadata.totalAmount;
+  const paymentOption = metadata.paymentOption === "full" ? "full" : "deposit";
+
+  if (
+    typeof customerName !== "string" ||
+    typeof customerEmail !== "string" ||
+    typeof customerPhone !== "string" ||
+    typeof serviceName !== "string" ||
+    typeof date !== "string" ||
+    typeof time !== "string" ||
+    typeof totalAmount !== "number" ||
+    bookingDateTimeMs(date, time) <= Date.now()
+  ) {
+    throw new ConvexError({
+      code: "RESERVATION_UNAVAILABLE",
+      message: "This appointment cannot be restored automatically.",
+    });
+  }
+
+  const service = (await ctx.db.query("services").collect()).find(
+    (candidate) => candidate.name === serviceName && candidate.isActive
+  );
+  if (!service) {
+    throw new ConvexError({
+      code: "RESERVATION_UNAVAILABLE",
+      message: "The booked service is no longer available.",
+    });
+  }
+
+  const option =
+    typeof serviceOptionLabel === "string"
+      ? service.priceOptions?.find(
+          (candidate) => candidate.label === serviceOptionLabel
+        )
+      : undefined;
+  const verifiedServicePrice = option?.price ?? service.price;
+  if (verifiedServicePrice !== totalAmount) {
+    throw new ConvexError({
+      code: "RESERVATION_UNAVAILABLE",
+      message: "The original booking price cannot be verified.",
+    });
+  }
+
+  const requestedStart = timeToMinutes(time);
+  const requestedEnd = requestedStart + service.duration;
+  if (
+    !isValidBookingDate(date) ||
+    !Number.isFinite(requestedStart) ||
+    requestedStart < BUSINESS_OPENING_MINUTES ||
+    requestedEnd > BUSINESS_CLOSING_MINUTES
+  ) {
+    throw new ConvexError({
+      code: "RESERVATION_UNAVAILABLE",
+      message: "The original appointment schedule cannot be verified.",
+    });
+  }
+  const existingAppointments = await ctx.db
+    .query("appointments")
+    .withIndex("by_date", (q) => q.eq("date", date))
+    .collect();
+  for (const appointment of existingAppointments) {
+    if (!appointmentBlocksAvailability(appointment, Date.now())) continue;
+    const existingService = await ctx.db.get(appointment.serviceId);
+    if (!existingService) continue;
+    const existingStart = timeToMinutes(appointment.time);
+    if (
+      intervalsOverlapWithBuffer(
+        requestedStart,
+        requestedEnd,
+        existingStart,
+        existingStart + existingService.duration
+      )
+    ) {
+      throw new ConvexError({
+        code: "RESERVATION_UNAVAILABLE",
+        message: "The original appointment time is no longer available.",
+      });
+    }
+  }
+
+  const blockedTimes = await ctx.db
+    .query("blockedTimes")
+    .withIndex("by_date", (q) => q.eq("date", date))
+    .collect();
+  for (const blocked of blockedTimes) {
+    if (
+      intervalsOverlapWithBuffer(
+        requestedStart,
+        requestedEnd,
+        timeToMinutes(blocked.startTime),
+        timeToMinutes(blocked.endTime),
+        APPOINTMENT_BUFFER_MINUTES
+      )
+    ) {
+      throw new ConvexError({
+        code: "RESERVATION_UNAVAILABLE",
+        message: "The original appointment time is blocked.",
+      });
+    }
+  }
+
+  let customer = await ctx.db
+    .query("customers")
+    .withIndex("by_email", (q) => q.eq("email", customerEmail.toLowerCase()))
+    .first();
+  if (!customer) {
+    const customerId = await ctx.db.insert("customers", {
+      name: customerName,
+      email: customerEmail.toLowerCase(),
+      phone: customerPhone,
+      createdAt: Date.now(),
+    });
+    customer = await ctx.db.get(customerId);
+  }
+  if (!customer) throw new Error("Could not restore booking customer");
+
+  return await ctx.db.insert("appointments", {
+    customerId: customer._id,
+    serviceId: service._id,
+    date,
+    time,
+    status: "confirmed",
+    depositAmount: payment.amount,
+    totalAmount,
+    paymentOption,
+    serviceOptionLabel:
+      typeof serviceOptionLabel === "string" ? serviceOptionLabel : undefined,
+    serviceOptionPrice: option?.price,
+    notes: "Restored automatically after verified Paystack payment",
+    createdAt: Date.now(),
+  });
+}
+
 async function finalizePayment(ctx: MutationCtx, args: VerifiedPayment) {
   const existing = await ctx.db
     .query("payments")
@@ -94,16 +259,24 @@ async function finalizePayment(ctx: MutationCtx, args: VerifiedPayment) {
 
   if (payment.status === "success") return payment._id;
 
-  const updates: { status: "success"; metadata?: string } = {
+  const updates: {
+    status: "success";
+    metadata?: string;
+    appointmentId?: typeof payment.appointmentId;
+  } = {
     status: "success",
   };
   const mergedMetadata = mergePaymentMetadata(payment.metadata, args.metadata);
   if (mergedMetadata !== undefined) {
     updates.metadata = mergedMetadata;
   }
-  if (payment.appointmentId) {
-    const appointment = await ctx.db.get(payment.appointmentId);
-    if (!appointment || !reservationCanFinalize(appointment)) {
+  let appointmentId = payment.appointmentId;
+  if (appointmentId) {
+    const appointment = await ctx.db.get(appointmentId);
+    if (!appointment) {
+      appointmentId = await restoreVerifiedAppointment(ctx, payment);
+      updates.appointmentId = appointmentId;
+    } else if (!reservationCanFinalize(appointment)) {
       throw new ConvexError({
         code: "RESERVATION_UNAVAILABLE",
         message: "This appointment can no longer be confirmed.",
@@ -121,8 +294,8 @@ async function finalizePayment(ctx: MutationCtx, args: VerifiedPayment) {
   }
 
   await ctx.db.patch(payment._id, updates);
-  if (payment.appointmentId) {
-    await ctx.db.patch(payment.appointmentId, {
+  if (appointmentId) {
+    await ctx.db.patch(appointmentId, {
       status: "confirmed",
       expiresAt: undefined,
     });
@@ -255,6 +428,7 @@ export const getByReferenceWithOrder = query({
     if (!payment) return null;
 
     let orderItems: number | null = null;
+    let appointmentStatus: string | null = null;
     let orderProducts: Array<{
       name: string;
       quantity: number;
@@ -283,9 +457,14 @@ export const getByReferenceWithOrder = query({
           item !== null
       );
     }
+    if (payment.appointmentId) {
+      const appointment = await ctx.db.get(payment.appointmentId);
+      appointmentStatus = appointment?.status ?? null;
+    }
 
     return {
       ...payment,
+      appointmentStatus,
       orderItems,
       orderProducts,
     };
