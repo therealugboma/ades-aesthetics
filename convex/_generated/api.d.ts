@@ -19,6 +19,7 @@ import type * as gallery from "../gallery.js";
 import type * as helpers from "../helpers.js";
 import type * as http from "../http.js";
 import type * as lib_booking from "../lib/booking.js";
+import type * as lib_order from "../lib/order.js";
 import type * as lib_payment from "../lib/payment.js";
 import type * as orders from "../orders.js";
 import type * as password from "../password.js";
@@ -47,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   helpers: typeof helpers;
   http: typeof http;
   "lib/booking": typeof lib_booking;
+  "lib/order": typeof lib_order;
   "lib/payment": typeof lib_payment;
   orders: typeof orders;
   password: typeof password;
