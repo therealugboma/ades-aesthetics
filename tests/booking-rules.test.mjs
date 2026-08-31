@@ -12,7 +12,11 @@ import {
   mergePaymentMetadata,
   serviceSecretIsValid,
 } from "../convex/lib/payment.ts";
-import { resolvePaystackAmounts } from "../src/lib/paystack-transaction.ts";
+import {
+  resolveExpectedPaystackAmount,
+  resolvePaystackAmounts,
+} from "../src/lib/paystack-transaction.ts";
+import { resolveBookingPayment } from "../convex/lib/bookingPayment.ts";
 
 test("daily availability starts at 10:00 and services finish by 19:00", () => {
   const slots = createAvailableSlots({
@@ -168,4 +172,44 @@ test("Paystack amount validation remains safe without requested_amount", () => {
       }),
     /less than the requested amount/
   );
+});
+
+test("fee-adjusted Paystack charges match the server checkout amount", () => {
+  assert.equal(
+    resolveExpectedPaystackAmount(
+      {
+        requestedAmountKobo: 375635,
+        chargedAmountKobo: 375635,
+        feesKobo: 15635,
+      },
+      360000
+    ),
+    360000
+  );
+
+  assert.throws(
+    () =>
+      resolveExpectedPaystackAmount(
+        {
+          requestedAmountKobo: 350000,
+          chargedAmountKobo: 365000,
+          feesKobo: 15000,
+        },
+        360000
+      ),
+    /does not match/
+  );
+});
+
+test("customers can choose the configured deposit or full booking payment", () => {
+  assert.deepEqual(resolveBookingPayment(12000, 30, "deposit"), {
+    amount: 3600,
+    percentage: 30,
+    paymentOption: "deposit",
+  });
+  assert.deepEqual(resolveBookingPayment(12000, 30, "full"), {
+    amount: 12000,
+    percentage: 100,
+    paymentOption: "full",
+  });
 });

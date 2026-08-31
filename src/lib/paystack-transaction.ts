@@ -40,3 +40,22 @@ export function resolvePaystackAmounts(transaction: PaystackAmounts) {
     feesKobo,
   };
 }
+
+export function resolveExpectedPaystackAmount(
+  transaction: ReturnType<typeof resolvePaystackAmounts>,
+  expectedAmountKobo: number
+) {
+  const expected = requireKoboAmount(expectedAmountKobo, "expected amount");
+  const feeAdjustedAmount = transaction.chargedAmountKobo - transaction.feesKobo;
+  const confirmedAmounts = new Set([
+    transaction.requestedAmountKobo,
+    feeAdjustedAmount,
+    transaction.feesKobo === 0 ? transaction.chargedAmountKobo : -1,
+  ]);
+
+  if (!confirmedAmounts.has(expected) || transaction.chargedAmountKobo < expected) {
+    throw new Error("Paystack returned an amount that does not match this payment");
+  }
+
+  return expected;
+}

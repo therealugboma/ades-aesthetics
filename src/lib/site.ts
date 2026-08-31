@@ -7,6 +7,7 @@ export const SITE_URL = (
 export const BUSINESS_PHONE_DISPLAY = "0816 469 5802";
 export const BUSINESS_PHONE_URL = "tel:+2348164695802";
 export const WHATSAPP_NUMBER = "2348051532174";
+export const WHATSAPP_PHONE_DISPLAY = "0805 153 2174";
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
 
 export const SOCIAL_LINKS = {

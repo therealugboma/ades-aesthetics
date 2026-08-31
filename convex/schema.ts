@@ -64,6 +64,9 @@ export default defineSchema({
     ),
     depositAmount: v.number(),
     totalAmount: v.number(),
+    paymentOption: v.optional(
+      v.union(v.literal("deposit"), v.literal("full"))
+    ),
     serviceOptionLabel: v.optional(v.string()),
     serviceOptionPrice: v.optional(v.number()),
     notes: v.optional(v.string()),
@@ -82,6 +85,8 @@ export default defineSchema({
     currency: v.string(),
     status: v.union(v.literal("pending"), v.literal("success"), v.literal("failed"), v.literal("abandoned")),
     metadata: v.optional(v.string()),
+    receiptEmailSentAt: v.optional(v.number()),
+    receiptEmailId: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_reference", ["reference"])
     .index("by_status", ["status"])

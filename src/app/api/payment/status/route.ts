@@ -5,6 +5,8 @@ import {
   getPaymentFinalizeSecret,
   verifyPaystackTransaction,
 } from "@/lib/paystack-server";
+import { resolveExpectedPaystackAmount } from "@/lib/paystack-transaction";
+import { sendReceiptIfNeeded } from "@/lib/payment-notifications";
 
 function parseMetadata(value?: string) {
   if (!value) return {};
@@ -37,10 +39,22 @@ export async function GET(request: NextRequest) {
       try {
         const transaction = await verifyPaystackTransaction(reference);
         if (transaction.status === "success") {
+          const amountKobo = resolveExpectedPaystackAmount(
+            transaction,
+            Math.round(payment.amount * 100)
+          );
+          console.info("Paystack payment verified", {
+            reference,
+            expectedAmountKobo: Math.round(payment.amount * 100),
+            requestedAmountKobo: transaction.requestedAmountKobo,
+            chargedAmountKobo: transaction.chargedAmountKobo,
+            feesKobo: transaction.feesKobo,
+            currency: transaction.currency,
+          });
           await convex.mutation(api.payments.finalizeVerified, {
             serviceSecret: getPaymentFinalizeSecret(),
             reference,
-            amountKobo: transaction.requestedAmountKobo,
+            amountKobo,
             currency: transaction.currency,
             metadata: JSON.stringify({
               ...(transaction.metadata ?? {}),
@@ -65,6 +79,8 @@ export async function GET(request: NextRequest) {
     if (!payment) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
+
+    await sendReceiptIfNeeded(convex, payment);
 
     return NextResponse.json(
       {

@@ -31,7 +31,7 @@ export default function RefundPolicyPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Service Bookings</h2>
               <div className="space-y-4 text-gray-600 leading-relaxed">
                 <p>
-                  <strong>Deposit Policy:</strong> A 30% deposit is required to confirm all service bookings. This deposit secures your appointment time and is deducted from the total service cost.
+                  <strong>Booking Payment:</strong> Customers may pay a 30% deposit or the full service amount when booking. A deposit secures the appointment and is deducted from the total service cost.
                 </p>
                 <p>
                   <strong>Cancellation by Customer:</strong>

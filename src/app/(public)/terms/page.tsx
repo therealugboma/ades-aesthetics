@@ -39,7 +39,7 @@ export default function TermsPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">2. Booking & Payment</h2>
               <div className="space-y-4 text-gray-600 leading-relaxed">
                 <ul className="list-disc pl-6 space-y-2">
-                  <li>A 30% deposit is required to confirm service bookings</li>
+                  <li>A 30% deposit or full payment confirms a service booking</li>
                   <li>Full payment is required for product orders at checkout</li>
                   <li>All payments are processed securely via Paystack</li>
                   <li>Prices are listed in Nigerian Naira (₦) and include applicable taxes</li>

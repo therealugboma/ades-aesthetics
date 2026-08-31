@@ -13,6 +13,10 @@ import {
   isValidBookingDate,
   timeToMinutes,
 } from "./lib/booking";
+import {
+  resolveBookingPayment,
+  type BookingPaymentOption,
+} from "./lib/bookingPayment";
 
 type BookingErrorCode =
   | "INVALID_BOOKING"
@@ -179,6 +183,7 @@ export const createCheckout = mutation({
     phone: v.string(),
     serviceOptionLabel: v.optional(v.string()),
     notes: v.optional(v.string()),
+    paymentOption: v.union(v.literal("deposit"), v.literal("full")),
     reference: v.string(),
   },
   handler: async (ctx, args) => {
@@ -208,9 +213,10 @@ export const createCheckout = mutation({
       throw new Error("Invalid deposit_percentage business setting");
     }
 
-    const depositAmount = Math.max(
-      Math.round(selectedPricing.price * (depositSetting / 100)),
-      1
+    const bookingPayment = resolveBookingPayment(
+      selectedPricing.price,
+      depositSetting,
+      args.paymentOption as BookingPaymentOption
     );
 
     const existingCustomer = await ctx.db
@@ -238,8 +244,9 @@ export const createCheckout = mutation({
       date: args.date,
       time: args.time,
       status: "pending",
-      depositAmount,
+      depositAmount: bookingPayment.amount,
       totalAmount: selectedPricing.price,
+      paymentOption: bookingPayment.paymentOption,
       serviceOptionLabel: selectedPricing.label,
       serviceOptionPrice: selectedPricing.label ? selectedPricing.price : undefined,
       notes: args.notes?.trim() || undefined,
@@ -250,7 +257,7 @@ export const createCheckout = mutation({
     await ctx.db.insert("payments", {
       reference: args.reference,
       appointmentId,
-      amount: depositAmount,
+      amount: bookingPayment.amount,
       currency: "NGN",
       status: "pending",
       metadata: JSON.stringify({
@@ -259,8 +266,9 @@ export const createCheckout = mutation({
         customerPhone: phone,
         appointmentId,
         totalAmount: selectedPricing.price,
-        depositAmount,
-        depositPercentage: depositSetting,
+        depositAmount: bookingPayment.amount,
+        depositPercentage: bookingPayment.percentage,
+        paymentOption: bookingPayment.paymentOption,
         serviceName: service.name,
         serviceOptionLabel: selectedPricing.label,
         date: args.date,
@@ -271,9 +279,10 @@ export const createCheckout = mutation({
 
     return {
       appointmentId,
-      amount: depositAmount,
+      amount: bookingPayment.amount,
       totalAmount: selectedPricing.price,
-      depositPercentage: depositSetting,
+      depositPercentage: bookingPayment.percentage,
+      paymentOption: bookingPayment.paymentOption,
       expiresAt,
     };
   },

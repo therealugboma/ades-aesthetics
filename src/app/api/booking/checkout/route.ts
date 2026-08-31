@@ -14,6 +14,7 @@ type CheckoutBody = {
   phone?: unknown;
   serviceOptionLabel?: unknown;
   notes?: unknown;
+  paymentOption?: unknown;
 };
 
 type BookingErrorData = {
@@ -30,7 +31,17 @@ function getConvexClient() {
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as CheckoutBody;
-    const { serviceId, date, time, name, email, phone, serviceOptionLabel, notes } = body;
+    const {
+      serviceId,
+      date,
+      time,
+      name,
+      email,
+      phone,
+      serviceOptionLabel,
+      notes,
+      paymentOption,
+    } = body;
 
     if (
       typeof serviceId !== "string" ||
@@ -39,6 +50,7 @@ export async function POST(request: Request) {
       typeof name !== "string" ||
       typeof email !== "string" ||
       typeof phone !== "string" ||
+      (paymentOption !== "deposit" && paymentOption !== "full") ||
       (serviceOptionLabel !== undefined && typeof serviceOptionLabel !== "string") ||
       (notes !== undefined && typeof notes !== "string")
     ) {
@@ -60,6 +72,7 @@ export async function POST(request: Request) {
         phone,
         serviceOptionLabel,
         notes,
+        paymentOption,
         reference,
       }
     );
@@ -70,6 +83,7 @@ export async function POST(request: Request) {
       amount: result.amount,
       totalAmount: result.totalAmount,
       depositPercentage: result.depositPercentage,
+      paymentOption: result.paymentOption,
       expiresAt: result.expiresAt,
     });
   } catch (error) {

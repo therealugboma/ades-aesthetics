@@ -165,6 +165,42 @@ export const finalizeVerified = mutation({
   },
 });
 
+export const markReceiptEmailSent = mutation({
+  args: {
+    serviceSecret: v.string(),
+    reference: v.string(),
+    emailId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (
+      !serviceSecretIsValid(
+        args.serviceSecret,
+        process.env.PAYMENT_FINALIZE_SECRET
+      )
+    ) {
+      throw new ConvexError({
+        code: "UNAUTHORIZED",
+        message: "Receipt update is not authorized.",
+      });
+    }
+
+    const payment = await ctx.db
+      .query("payments")
+      .withIndex("by_reference", (q) => q.eq("reference", args.reference))
+      .first();
+    if (!payment || payment.status !== "success") {
+      throw new Error("A successful payment is required before sending a receipt");
+    }
+    if (payment.receiptEmailSentAt) return payment._id;
+
+    await ctx.db.patch(payment._id, {
+      receiptEmailSentAt: Date.now(),
+      receiptEmailId: args.emailId,
+    });
+    return payment._id;
+  },
+});
+
 export const releaseReservation = mutation({
   args: { reference: v.string() },
   handler: async (ctx, args) => {

@@ -26,6 +26,8 @@ interface FormData {
   notes: string;
 }
 
+type BookingPaymentOption = "deposit" | "full";
+
 export default function BookingForm() {
   const router = useRouter();
   const services = useQuery(api.services.list);
@@ -45,6 +47,8 @@ export default function BookingForm() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
+  const [paymentOption, setPaymentOption] =
+    useState<BookingPaymentOption>("deposit");
   const todayDate = getBusinessDateString();
   const [calendarYear, setCalendarYear] = useState(() =>
     Number(getBusinessDateString().slice(0, 4))
@@ -128,6 +132,7 @@ export default function BookingForm() {
           phone: formData.phone,
           serviceOptionLabel: selectedPriceOption?.label,
           notes: formData.notes,
+          paymentOption,
         }),
       });
 
@@ -468,6 +473,55 @@ export default function BookingForm() {
 
       {step === 4 && selectedService && (
         <div>
+          <fieldset className="mb-6 rounded-xl border border-rose-200 bg-rose-50/50 p-4">
+            <legend className="px-1 text-sm font-semibold text-gray-900">
+              Choose how much to pay now
+            </legend>
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                aria-pressed={paymentOption === "deposit"}
+                onClick={() => setPaymentOption("deposit")}
+                className={`rounded-xl border-2 p-4 text-left transition-colors ${
+                  paymentOption === "deposit"
+                    ? "border-rose-600 bg-white"
+                    : "border-white bg-white/70 hover:border-rose-300"
+                }`}
+              >
+                <span className="block font-medium text-gray-900">
+                  Pay {depositPercentage}% deposit
+                </span>
+                <span className="mt-1 block font-bold text-rose-600">
+                  {formatPrice(
+                    Math.round(selectedPrice * (depositPercentage / 100))
+                  )}
+                </span>
+                <span className="mt-1 block text-xs text-gray-500">
+                  Pay the balance at your appointment.
+                </span>
+              </button>
+              <button
+                type="button"
+                aria-pressed={paymentOption === "full"}
+                onClick={() => setPaymentOption("full")}
+                className={`rounded-xl border-2 p-4 text-left transition-colors ${
+                  paymentOption === "full"
+                    ? "border-rose-600 bg-white"
+                    : "border-white bg-white/70 hover:border-rose-300"
+                }`}
+              >
+                <span className="block font-medium text-gray-900">
+                  Pay full amount
+                </span>
+                <span className="mt-1 block font-bold text-rose-600">
+                  {formatPrice(selectedPrice)}
+                </span>
+                <span className="mt-1 block text-xs text-gray-500">
+                  Your service will be fully paid.
+                </span>
+              </button>
+            </div>
+          </fieldset>
           <div className="rounded-xl border border-gray-200 bg-gray-50 p-6">
             <h3 className="mb-4 font-heading text-lg font-semibold text-gray-900">
               Booking Summary
@@ -502,11 +556,17 @@ export default function BookingForm() {
               <div className="border-t border-gray-200 pt-3">
                 <div className="flex justify-between">
                   <span className="font-medium text-gray-900">
-                    Deposit ({depositPercentage}%)
+                    {paymentOption === "full"
+                      ? "Full payment"
+                      : `Deposit (${depositPercentage}%)`}
                   </span>
                   <span className="font-bold text-rose-600">
                     {formatPrice(
-                      Math.round(selectedPrice * (depositPercentage / 100))
+                      paymentOption === "full"
+                        ? selectedPrice
+                        : Math.round(
+                            selectedPrice * (depositPercentage / 100)
+                          )
                     )}
                   </span>
                 </div>
@@ -534,7 +594,11 @@ export default function BookingForm() {
               disabled={isSubmitting}
               className="flex-1 rounded-lg bg-rose-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-rose-700 disabled:opacity-50"
             >
-              {isSubmitting ? "Processing Payment..." : "Pay Deposit & Confirm"}
+              {isSubmitting
+                ? "Processing Payment..."
+                : paymentOption === "full"
+                  ? "Pay Full Amount & Confirm"
+                  : "Pay Deposit & Confirm"}
             </button>
           </div>
         </div>

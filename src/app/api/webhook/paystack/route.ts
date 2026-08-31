@@ -6,6 +6,8 @@ import {
   getPaymentFinalizeSecret,
   verifyPaystackTransaction,
 } from "@/lib/paystack-server";
+import { resolveExpectedPaystackAmount } from "@/lib/paystack-transaction";
+import { sendReceiptIfNeeded } from "@/lib/payment-notifications";
 
 function validSignature(body: string, signature: string, secret: string) {
   const expected = Buffer.from(
@@ -44,10 +46,27 @@ export async function POST(request: Request) {
       if (transaction.status !== "success") {
         throw new Error("Paystack transaction is not successful");
       }
-      await new ConvexHttpClient(url).mutation(api.payments.finalizeVerified, {
+      const convex = new ConvexHttpClient(url);
+      const payment = await convex.query(api.payments.getByReferenceWithOrder, {
+        reference: event.data.reference,
+      });
+      if (!payment) throw new Error("Payment not found");
+      const amountKobo = resolveExpectedPaystackAmount(
+        transaction,
+        Math.round(payment.amount * 100)
+      );
+      console.info("Paystack webhook payment verified", {
+        reference: event.data.reference,
+        expectedAmountKobo: Math.round(payment.amount * 100),
+        requestedAmountKobo: transaction.requestedAmountKobo,
+        chargedAmountKobo: transaction.chargedAmountKobo,
+        feesKobo: transaction.feesKobo,
+        currency: transaction.currency,
+      });
+      await convex.mutation(api.payments.finalizeVerified, {
         serviceSecret: getPaymentFinalizeSecret(),
         reference: event.data.reference,
-        amountKobo: transaction.requestedAmountKobo,
+        amountKobo,
         currency: transaction.currency,
         metadata: JSON.stringify({
           ...(transaction.metadata ?? {}),
@@ -56,6 +75,13 @@ export async function POST(request: Request) {
           paystackFeesKobo: transaction.feesKobo,
         }),
       });
+      const confirmedPayment = await convex.query(
+        api.payments.getByReferenceWithOrder,
+        { reference: event.data.reference }
+      );
+      if (confirmedPayment) {
+        await sendReceiptIfNeeded(convex, confirmedPayment);
+      }
     }
 
     return NextResponse.json({ received: true });

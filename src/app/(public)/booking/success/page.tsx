@@ -25,6 +25,12 @@ function BookingSuccessContent() {
     typeof metadata.depositPercentage === "number"
       ? metadata.depositPercentage
       : 30;
+  const paymentOption =
+    typeof metadata.paymentOption === "string"
+      ? metadata.paymentOption
+      : depositPercentage === 100
+        ? "full"
+        : "deposit";
   const isConfirmed = payment?.status === "success";
 
   return (
@@ -57,7 +63,7 @@ function BookingSuccessContent() {
           </h1>
           <p className="mt-4 text-lg text-gray-600">
             {isConfirmed
-              ? `Thank you for choosing Ades Aesthetics. Your deposit of ${formatPrice(payment.amount)} has been received and your appointment is confirmed.`
+              ? `Thank you for choosing Ades Aesthetics. Your ${paymentOption === "full" ? "full payment" : "deposit"} of ${formatPrice(payment.amount)} has been received and your appointment is confirmed.`
               : verifying
                 ? "Paystack is finalizing your payment. This page will update automatically."
                 : error ||
@@ -93,7 +99,9 @@ function BookingSuccessContent() {
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">
-                    Deposit ({depositPercentage}%)
+                    {paymentOption === "full"
+                      ? "Full Payment"
+                      : `Deposit (${depositPercentage}%)`}
                   </dt>
                   <dd className="text-sm font-bold text-rose-600">
                     {formatPrice(payment.amount)}
