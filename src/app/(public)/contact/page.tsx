@@ -3,6 +3,11 @@
 import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "convex/_generated/api";
+import {
+  BUSINESS_PHONE_DISPLAY,
+  BUSINESS_PHONE_URL,
+  WHATSAPP_URL,
+} from "@/lib/site";
 
 interface ContactForm {
   name: string;
@@ -249,7 +254,7 @@ export default function ContactPage() {
                 </div>
 
                 <a
-                  href="https://wa.me/message/WYVXLRGBW4FGF1"
+                  href={WHATSAPP_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-4 rounded-2xl border border-green-200 bg-green-50 p-5 hover:bg-green-100 transition-colors"
@@ -324,10 +329,10 @@ export default function ContactPage() {
                         Phone
                       </h3>
                       <a
-                        href="tel:+2348164695802"
+                        href={BUSINESS_PHONE_URL}
                         className="mt-1 block text-sm text-gray-600 hover:text-rose-600 transition-colors"
                       >
-                        +234 816 469 5802
+                        {BUSINESS_PHONE_DISPLAY}
                       </a>
                     </div>
                   </div>

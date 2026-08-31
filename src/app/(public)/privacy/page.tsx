@@ -1,3 +1,8 @@
+import {
+  BUSINESS_PHONE_DISPLAY,
+  BUSINESS_PHONE_URL,
+} from "@/lib/site";
+
 export const metadata = {
   title: "Privacy Policy | Ades Aesthetics",
   description: "Privacy policy for Ades Aesthetics beauty services.",
@@ -62,7 +67,7 @@ export default function PrivacyPolicyPage() {
                 <p>For questions about this privacy policy, contact us at:</p>
                 <ul className="list-disc pl-6 space-y-2">
                   <li>Email: adesaesthetics@gmail.com</li>
-                  <li>Phone: +234 816 469 5802</li>
+                  <li>Phone: <a href={BUSINESS_PHONE_URL} className="text-rose-600 hover:text-rose-700 underline">{BUSINESS_PHONE_DISPLAY}</a></li>
                   <li>Address: 34, Beach Road, Police Post Ebutte, Ikorodu, Lagos, Nigeria</li>
                 </ul>
               </div>

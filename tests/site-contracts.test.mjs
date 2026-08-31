@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  BUSINESS_PHONE_DISPLAY,
+  BUSINESS_PHONE_URL,
   SITE_URL,
   SOCIAL_LINKS,
   WHATSAPP_URL,
@@ -11,7 +13,9 @@ import { getBusinessDateString, getMonthGrid } from "../src/lib/booking-calendar
 
 test("production-facing links use the owned domain and business profiles", () => {
   assert.equal(SITE_URL, "https://www.adesaesthetics.store");
-  assert.equal(WHATSAPP_URL, "https://wa.me/2348164695802");
+  assert.equal(BUSINESS_PHONE_DISPLAY, "0816 469 5802");
+  assert.equal(BUSINESS_PHONE_URL, "tel:+2348164695802");
+  assert.equal(WHATSAPP_URL, "https://wa.me/2348051532174");
   assert.equal(SOCIAL_LINKS.instagram, "https://www.instagram.com/ades_aesthetics");
   assert.equal(SOCIAL_LINKS.tiktok, "https://www.tiktok.com/@ades_aesthetics");
   assert.equal(SOCIAL_LINKS.facebook, "https://facebook.com/adesaesthetics");

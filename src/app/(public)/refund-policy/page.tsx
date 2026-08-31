@@ -1,3 +1,9 @@
+import {
+  BUSINESS_PHONE_DISPLAY,
+  BUSINESS_PHONE_URL,
+  WHATSAPP_URL,
+} from "@/lib/site";
+
 export const metadata = {
   title: "Refund Policy | Ades Aesthetics",
   description: "Refund and cancellation policy for Ades Aesthetics beauty services and products.",
@@ -84,8 +90,8 @@ export default function RefundPolicyPage() {
               <div className="space-y-4 text-gray-600 leading-relaxed">
                 <p>To request a refund, please contact us through any of the following channels:</p>
                 <ul className="list-disc pl-6 space-y-2">
-                  <li><strong>WhatsApp:</strong> <a href="https://wa.me/message/WYVXLRGBW4FGF1" className="text-rose-600 hover:text-rose-700 underline">Chat with us</a></li>
-                  <li><strong>Phone:</strong> +234 816 469 5802</li>
+                  <li><strong>WhatsApp:</strong> <a href={WHATSAPP_URL} className="text-rose-600 hover:text-rose-700 underline">Chat with us</a></li>
+                  <li><strong>Phone:</strong> <a href={BUSINESS_PHONE_URL} className="text-rose-600 hover:text-rose-700 underline">{BUSINESS_PHONE_DISPLAY}</a></li>
                   <li><strong>Email:</strong> <a href="mailto:adesaesthetics@gmail.com" className="text-rose-600 hover:text-rose-700 underline">adesaesthetics@gmail.com</a></li>
                 </ul>
                 <p>

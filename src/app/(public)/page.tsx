@@ -3,6 +3,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { HomeServices, HomeProducts } from "@/components/home/HomeContent";
 import { premiumGalleryImages } from "@/lib/gallery-images";
+import {
+  BUSINESS_PHONE_DISPLAY,
+  BUSINESS_PHONE_URL,
+} from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Ades Aesthetics | Premium Beauty Services in Lagos",
@@ -329,9 +333,12 @@ export default function HomePage() {
                       <h3 className="text-sm font-semibold text-gray-900">
                         Phone
                       </h3>
-                      <p className="mt-1 text-sm text-gray-600">
-                        +234 816 469 5802
-                      </p>
+                      <a
+                        href={BUSINESS_PHONE_URL}
+                        className="mt-1 block text-sm text-gray-600 transition-colors hover:text-rose-600"
+                      >
+                        {BUSINESS_PHONE_DISPLAY}
+                      </a>
                     </div>
                   </div>
                 </div>

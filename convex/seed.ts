@@ -271,7 +271,7 @@ export const seed = mutation({
       { key: "business_name", value: "Ades Aesthetics" },
       { key: "business_hours", value: JSON.stringify({ open: "10:00", close: "19:00" }) },
       { key: "deposit_percentage", value: "30" },
-      { key: "whatsapp_number", value: "+2348164695802" },
+      { key: "whatsapp_number", value: "+2348051532174" },
       { key: "address", value: "123 Beauty Lane, Victoria Island, Lagos, Nigeria" },
       { key: "email", value: "adesaesthetics@gmail.com" },
       { key: "phone", value: "+2348164695802" },
