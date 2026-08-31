@@ -141,7 +141,9 @@ function BookingSuccessContent() {
               <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-xs font-bold text-amber-900">
                 1
               </span>
-              A confirmation email has been sent to your inbox.
+              Your Ades Aesthetics invoice is sent separately from Paystack to
+              the email used for your booking. Please check your Inbox, Spam,
+              or Promotions folder.
             </li>
             <li className="flex items-start gap-3">
               <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-xs font-bold text-amber-900">

@@ -99,22 +99,36 @@ function OrderSuccessContent() {
         </div>
 
         {isConfirmed ? (
-          <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-6">
-            <h3 className="text-base font-semibold text-green-900">
-              Arrange Delivery on WhatsApp
-            </h3>
-            <p className="mt-2 text-sm text-green-800">
-              Your verified order reference and product details are already included in the message.
-            </p>
-            <a
-              href={buildWhatsAppUrl(deliveryMessage)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-green-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700 sm:w-auto"
+          <>
+            <div
+              role="note"
+              className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-900"
             >
-              Message Us to Arrange Delivery
-            </a>
-          </div>
+              <h3 className="text-base font-semibold">Check Your Email</h3>
+              <p className="mt-2 text-sm text-amber-800">
+                Your Ades Aesthetics invoice is sent separately from Paystack
+                to the email used at checkout. Please check your Inbox, Spam,
+                or Promotions folder.
+              </p>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-6">
+              <h3 className="text-base font-semibold text-green-900">
+                Arrange Delivery on WhatsApp
+              </h3>
+              <p className="mt-2 text-sm text-green-800">
+                Your verified order reference and product details are already included in the message.
+              </p>
+              <a
+                href={buildWhatsAppUrl(deliveryMessage)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-green-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700 sm:w-auto"
+              >
+                Message Us to Arrange Delivery
+              </a>
+            </div>
+          </>
         ) : !verifying ? (
           <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
             <p className="font-semibold">Do not make another payment yet.</p>

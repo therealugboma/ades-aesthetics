@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import {
   BUSINESS_PHONE_DISPLAY,
@@ -17,6 +18,15 @@ import {
   getPendingPaymentEmailRecipients,
 } from "../src/lib/payment-receipt.ts";
 import { getBusinessDateString, getMonthGrid } from "../src/lib/booking-calendar.ts";
+
+const bookingSuccessPage = readFileSync(
+  new URL("../src/app/(public)/booking/success/page.tsx", import.meta.url),
+  "utf8"
+);
+const orderSuccessPage = readFileSync(
+  new URL("../src/app/(public)/order/success/page.tsx", import.meta.url),
+  "utf8"
+);
 
 test("production-facing links use the owned domain and business profiles", () => {
   assert.equal(SITE_URL, "https://www.adesaesthetics.store");
@@ -145,6 +155,14 @@ test("an existing order with a customer receipt still queues the missing owner i
     }),
     { customer: false, owner: true }
   );
+});
+
+test("confirmed payment pages tell customers where to find the store invoice", () => {
+  const invoiceGuidance =
+    /invoice is sent separately from Paystack.*Inbox,\s+Spam,\s+or Promotions/s;
+
+  assert.match(bookingSuccessPage, invoiceGuidance);
+  assert.match(orderSuccessPage, invoiceGuidance);
 });
 
 test("delivery WhatsApp links safely include verified order details", () => {
