@@ -16,6 +16,32 @@ export type PaymentReceiptInput = {
   orderProducts?: ReceiptProduct[];
 };
 
+type PaymentReceipt = {
+  to: string;
+  subject: string;
+  html: string;
+};
+
+export type PaymentEmailMessage = PaymentReceipt & {
+  recipient: "customer" | "owner";
+  idempotencyKey: string;
+};
+
+export function getPendingPaymentEmailRecipients({
+  hasOrderProducts,
+  customerEmailSent,
+  ownerEmailSent,
+}: {
+  hasOrderProducts: boolean;
+  customerEmailSent: boolean;
+  ownerEmailSent: boolean;
+}) {
+  return {
+    customer: !customerEmailSent,
+    owner: hasOrderProducts && !ownerEmailSent,
+  };
+}
+
 function escapeHtml(value: unknown) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -44,24 +70,35 @@ function numberMetadata(metadata: Record<string, unknown>, key: string) {
 function receiptLayout({
   preview,
   heading,
-  customerName,
+  introduction,
   reference,
   rows,
   totalLabel,
   total,
-  whatsappUrl,
-  whatsappPrompt,
+  followUp,
 }: {
   preview: string;
   heading: string;
-  customerName: string;
+  introduction: string;
   reference: string;
   rows: string;
   totalLabel: string;
   total: number;
-  whatsappUrl: string;
-  whatsappPrompt: string;
+  followUp?: {
+    title: string;
+    prompt: string;
+    url: string;
+    label: string;
+  };
 }) {
+  const followUpHtml = followUp
+    ? `<div style="margin-top:24px;padding:20px;border-radius:14px;background:#edf9f0;color:#215d35">
+              <strong>${escapeHtml(followUp.title)}</strong>
+              <p style="margin:8px 0 16px;line-height:1.5">${escapeHtml(followUp.prompt)}</p>
+              <a href="${escapeHtml(followUp.url)}" style="display:inline-block;border-radius:999px;background:#16803c;color:#ffffff;text-decoration:none;padding:12px 20px;font-weight:bold">${escapeHtml(followUp.label)}</a>
+            </div>`
+    : "";
+
   return `<!doctype html>
 <html lang="en">
   <head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(preview)}</title></head>
@@ -76,16 +113,12 @@ function receiptLayout({
           </td></tr>
           <tr><td style="padding:34px">
             <h1 style="margin:0;font-family:Georgia,serif;font-size:26px;color:#151b2b">${escapeHtml(heading)}</h1>
-            <p style="margin:14px 0 24px;line-height:1.6;color:#596174">Hello ${escapeHtml(customerName || "Customer")}, your Paystack payment has been confirmed. Keep this email as your invoice.</p>
+            <p style="margin:14px 0 24px;line-height:1.6;color:#596174">${escapeHtml(introduction)}</p>
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">
               ${rows}
               <tr><td style="padding:16px 0;border-top:2px solid #eee4e6;font-weight:bold">${escapeHtml(totalLabel)}</td><td align="right" style="padding:16px 0;border-top:2px solid #eee4e6;font-weight:bold;color:#a83452">${escapeHtml(formatNaira(total))}</td></tr>
             </table>
-            <div style="margin-top:24px;padding:20px;border-radius:14px;background:#edf9f0;color:#215d35">
-              <strong>Follow up with us on WhatsApp</strong>
-              <p style="margin:8px 0 16px;line-height:1.5">${escapeHtml(whatsappPrompt)} Message ${escapeHtml(WHATSAPP_PHONE_DISPLAY)} and your reference will already be included.</p>
-              <a href="${escapeHtml(whatsappUrl)}" style="display:inline-block;border-radius:999px;background:#16803c;color:#ffffff;text-decoration:none;padding:12px 20px;font-weight:bold">Continue on WhatsApp</a>
-            </div>
+            ${followUpHtml}
             <p style="margin:24px 0 0;font-size:12px;line-height:1.5;color:#7a8291">This receipt was issued automatically after Paystack confirmed payment. Please do not pay again for the same reference.</p>
           </td></tr>
         </table>
@@ -121,13 +154,17 @@ export function createPaymentReceipt(input: PaymentReceiptInput) {
       html: receiptLayout({
         preview: `Your Ades Aesthetics order ${input.reference} is confirmed`,
         heading: "Order Confirmed",
-        customerName,
+        introduction: `Hello ${customerName || "Customer"}, your Paystack payment has been confirmed. Keep this email as your invoice.`,
         reference: input.reference,
         rows: orderRows,
         totalLabel: "Total paid",
         total: input.amount,
-        whatsappUrl: buildWhatsAppUrl(message),
-        whatsappPrompt: "Contact us to choose the delivery option that suits you best.",
+        followUp: {
+          title: "Follow up with us on WhatsApp",
+          prompt: `Contact us to choose the delivery option that suits you best. Message ${WHATSAPP_PHONE_DISPLAY} and your reference will already be included.`,
+          url: buildWhatsAppUrl(message),
+          label: "Continue on WhatsApp",
+        },
       }),
     };
   }
@@ -161,13 +198,85 @@ export function createPaymentReceipt(input: PaymentReceiptInput) {
     html: receiptLayout({
       preview: `Your Ades Aesthetics booking ${input.reference} is confirmed`,
       heading: "Booking Confirmed",
-      customerName,
+      introduction: `Hello ${customerName || "Customer"}, your Paystack payment has been confirmed. Keep this email as your invoice.`,
       reference: input.reference,
       rows,
       totalLabel: paymentOption === "full" ? "Total paid" : "Deposit paid",
       total: input.amount,
-      whatsappUrl: buildWhatsAppUrl(message),
-      whatsappPrompt: "Contact us if you need help or want to add details to your appointment.",
+      followUp: {
+        title: "Follow up with us on WhatsApp",
+        prompt: `Contact us if you need help or want to add details to your appointment. Message ${WHATSAPP_PHONE_DISPLAY} and your reference will already be included.`,
+        url: buildWhatsAppUrl(message),
+        label: "Continue on WhatsApp",
+      },
     }),
   };
+}
+
+export function createOwnerOrderReceipt(
+  input: PaymentReceiptInput,
+  ownerEmail: string
+): PaymentReceipt | null {
+  if (!input.orderProducts?.length) return null;
+  if (!/^\S+@\S+\.\S+$/.test(ownerEmail)) {
+    throw new Error("Order notification is missing a valid owner email");
+  }
+
+  const customerName = textMetadata(input.metadata, "customerName");
+  const customerEmail = textMetadata(input.metadata, "customerEmail");
+  const customerPhone = textMetadata(input.metadata, "customerPhone");
+  const customerRows = [
+    ["Customer", customerName || "Not provided"],
+    ["Email", customerEmail || "Not provided"],
+    ["Phone", customerPhone || "Not provided"],
+  ]
+    .map(
+      ([label, value]) =>
+        `<tr><td style="padding:12px 0;border-top:1px solid #f0e8ea;color:#596174">${escapeHtml(label)}</td><td align="right" style="padding:12px 0;border-top:1px solid #f0e8ea">${escapeHtml(value)}</td></tr>`
+    )
+    .join("");
+  const productRows = input.orderProducts
+    .map(
+      (product) =>
+        `<tr><td style="padding:12px 0;border-top:1px solid #f0e8ea">${escapeHtml(product.name)} × ${product.quantity}</td><td align="right" style="padding:12px 0;border-top:1px solid #f0e8ea">${escapeHtml(formatNaira(product.price * product.quantity))}</td></tr>`
+    )
+    .join("");
+
+  return {
+    to: ownerEmail,
+    subject: `Paid order ${input.reference} · ${customerName || "Customer"}`,
+    html: receiptLayout({
+      preview: `New paid Ades Aesthetics order ${input.reference}`,
+      heading: "New Paid Order",
+      introduction:
+        "Paystack has confirmed this product payment. Review the invoice below and contact the customer to arrange delivery.",
+      reference: input.reference,
+      rows: `${customerRows}${productRows}`,
+      totalLabel: "Order total paid",
+      total: input.amount,
+    }),
+  };
+}
+
+export function createPaymentEmailMessages(
+  input: PaymentReceiptInput,
+  ownerEmail: string
+): PaymentEmailMessage[] {
+  const customerReceipt = createPaymentReceipt(input);
+  const messages: PaymentEmailMessage[] = [
+    {
+      ...customerReceipt,
+      recipient: "customer",
+      idempotencyKey: `payment-receipt-${input.reference}-customer`,
+    },
+  ];
+  const ownerReceipt = createOwnerOrderReceipt(input, ownerEmail);
+  if (ownerReceipt) {
+    messages.push({
+      ...ownerReceipt,
+      recipient: "owner",
+      idempotencyKey: `payment-receipt-${input.reference}-owner`,
+    });
+  }
+  return messages;
 }

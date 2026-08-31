@@ -374,6 +374,44 @@ export const markReceiptEmailSent = mutation({
   },
 });
 
+export const markOwnerOrderEmailSent = mutation({
+  args: {
+    serviceSecret: v.string(),
+    reference: v.string(),
+    emailId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (
+      !serviceSecretIsValid(
+        args.serviceSecret,
+        process.env.PAYMENT_FINALIZE_SECRET
+      )
+    ) {
+      throw new ConvexError({
+        code: "UNAUTHORIZED",
+        message: "Owner order notification update is not authorized.",
+      });
+    }
+
+    const payment = await ctx.db
+      .query("payments")
+      .withIndex("by_reference", (q) => q.eq("reference", args.reference))
+      .first();
+    if (!payment || payment.status !== "success" || !payment.orderId) {
+      throw new Error(
+        "A successful product payment is required before notifying the owner"
+      );
+    }
+    if (payment.ownerOrderEmailSentAt) return payment._id;
+
+    await ctx.db.patch(payment._id, {
+      ownerOrderEmailSentAt: Date.now(),
+      ownerOrderEmailId: args.emailId,
+    });
+    return payment._id;
+  },
+});
+
 export const releaseReservation = mutation({
   args: { reference: v.string() },
   handler: async (ctx, args) => {

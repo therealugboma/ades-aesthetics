@@ -87,6 +87,8 @@ export default defineSchema({
     metadata: v.optional(v.string()),
     receiptEmailSentAt: v.optional(v.number()),
     receiptEmailId: v.optional(v.string()),
+    ownerOrderEmailSentAt: v.optional(v.number()),
+    ownerOrderEmailId: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_reference", ["reference"])
     .index("by_status", ["status"])

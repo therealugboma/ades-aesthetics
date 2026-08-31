@@ -10,7 +10,12 @@ import {
   WHATSAPP_PHONE_DISPLAY,
   buildWhatsAppUrl,
 } from "../src/lib/site.ts";
-import { createPaymentReceipt } from "../src/lib/payment-receipt.ts";
+import {
+  createOwnerOrderReceipt,
+  createPaymentEmailMessages,
+  createPaymentReceipt,
+  getPendingPaymentEmailRecipients,
+} from "../src/lib/payment-receipt.ts";
 import { getBusinessDateString, getMonthGrid } from "../src/lib/booking-calendar.ts";
 
 test("production-facing links use the owned domain and business profiles", () => {
@@ -61,6 +66,85 @@ test("product invoices list items and ask the customer to arrange delivery", () 
   assert.match(receipt.subject, /Order invoice ADE-123/);
   assert.match(receipt.html, /Brow Gel × 2/);
   assert.match(receipt.html, /delivery option/i);
+});
+
+test("paid product orders create customer and owner invoice emails", () => {
+  const input = {
+    reference: "ADE-OWNER-123",
+    amount: 15000,
+    metadata: {
+      customerName: "Ada Customer",
+      customerEmail: "ada@example.com",
+      customerPhone: "08012345678",
+    },
+    orderProducts: [{ name: "Brow Gel", quantity: 3, price: 5000 }],
+  };
+
+  const ownerReceipt = createOwnerOrderReceipt(
+    input,
+    "adesaesthetics@gmail.com"
+  );
+  assert.ok(ownerReceipt);
+  assert.equal(ownerReceipt.to, "adesaesthetics@gmail.com");
+  assert.match(ownerReceipt.subject, /Paid order ADE-OWNER-123/);
+  assert.match(ownerReceipt.html, /Ada Customer/);
+  assert.match(ownerReceipt.html, /ada@example\.com/);
+  assert.match(ownerReceipt.html, /08012345678/);
+  assert.match(ownerReceipt.html, /Brow Gel × 3/);
+
+  const messages = createPaymentEmailMessages(
+    input,
+    "adesaesthetics@gmail.com"
+  );
+  assert.deepEqual(
+    messages.map(({ recipient, idempotencyKey }) => ({
+      recipient,
+      idempotencyKey,
+    })),
+    [
+      {
+        recipient: "customer",
+        idempotencyKey: "payment-receipt-ADE-OWNER-123-customer",
+      },
+      {
+        recipient: "owner",
+        idempotencyKey: "payment-receipt-ADE-OWNER-123-owner",
+      },
+    ]
+  );
+});
+
+test("booking payments email the customer without creating an order alert", () => {
+  const messages = createPaymentEmailMessages(
+    {
+      reference: "BK-CUSTOMER-123",
+      amount: 3600,
+      metadata: {
+        customerName: "Ada",
+        customerEmail: "ada@example.com",
+        serviceName: "Classic Lashes",
+        date: "2026-09-04",
+        time: "12:30",
+        totalAmount: 12000,
+        paymentOption: "deposit",
+      },
+    },
+    "adesaesthetics@gmail.com"
+  );
+
+  assert.equal(messages.length, 1);
+  assert.equal(messages[0].recipient, "customer");
+});
+
+test("an existing order with a customer receipt still queues the missing owner invoice", () => {
+  assert.deepEqual(
+    getPendingPaymentEmailRecipients({
+      hasOrderProducts: true,
+      customerEmailSent: true,
+      ownerEmailSent: false,
+    }),
+    { customer: false, owner: true }
+  );
 });
 
 test("delivery WhatsApp links safely include verified order details", () => {
