@@ -1,4 +1,5 @@
 import "server-only";
+import { resolvePaystackAmounts } from "@/lib/paystack-transaction";
 
 type PaystackVerification = {
   status: boolean;
@@ -6,6 +7,8 @@ type PaystackVerification = {
   data?: {
     status: string;
     amount: number;
+    requested_amount?: number;
+    fees?: number;
     currency: string;
     metadata?: Record<string, unknown>;
   };
@@ -41,5 +44,8 @@ export async function verifyPaystackTransaction(reference: string) {
   ) {
     throw new Error("Paystack returned an invalid verification response");
   }
-  return result.data;
+  return {
+    ...result.data,
+    ...resolvePaystackAmounts(result.data),
+  };
 }

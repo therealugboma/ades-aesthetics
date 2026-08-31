@@ -47,11 +47,14 @@ export async function POST(request: Request) {
       await new ConvexHttpClient(url).mutation(api.payments.finalizeVerified, {
         serviceSecret: getPaymentFinalizeSecret(),
         reference: event.data.reference,
-        amountKobo: transaction.amount,
+        amountKobo: transaction.requestedAmountKobo,
         currency: transaction.currency,
-        metadata: transaction.metadata
-          ? JSON.stringify(transaction.metadata)
-          : undefined,
+        metadata: JSON.stringify({
+          ...(transaction.metadata ?? {}),
+          paystackRequestedAmountKobo: transaction.requestedAmountKobo,
+          paystackChargedAmountKobo: transaction.chargedAmountKobo,
+          paystackFeesKobo: transaction.feesKobo,
+        }),
       });
     }
 

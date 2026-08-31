@@ -12,6 +12,7 @@ import {
   mergePaymentMetadata,
   serviceSecretIsValid,
 } from "../convex/lib/payment.ts";
+import { resolvePaystackAmounts } from "../src/lib/paystack-transaction.ts";
 
 test("daily availability starts at 10:00 and services finish by 19:00", () => {
   const slots = createAvailableSlots({
@@ -134,5 +135,37 @@ test("Paystack verification metadata does not erase checkout order details", () 
   assert.equal(
     mergePaymentMetadata(JSON.stringify({ customerName: "Ada" }), "{}"),
     JSON.stringify({ customerName: "Ada" })
+  );
+});
+
+test("Paystack customer-borne fees do not change the requested payment amount", () => {
+  assert.deepEqual(
+    resolvePaystackAmounts({
+      amount: 375635,
+      requested_amount: 360000,
+      fees: 15635,
+    }),
+    {
+      requestedAmountKobo: 360000,
+      chargedAmountKobo: 375635,
+      feesKobo: 15635,
+    }
+  );
+});
+
+test("Paystack amount validation remains safe without requested_amount", () => {
+  assert.deepEqual(resolvePaystackAmounts({ amount: 360000 }), {
+    requestedAmountKobo: 360000,
+    chargedAmountKobo: 360000,
+    feesKobo: 0,
+  });
+
+  assert.throws(
+    () =>
+      resolvePaystackAmounts({
+        amount: 350000,
+        requested_amount: 360000,
+      }),
+    /less than the requested amount/
   );
 });

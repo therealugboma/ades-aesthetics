@@ -40,11 +40,14 @@ export async function GET(request: NextRequest) {
           await convex.mutation(api.payments.finalizeVerified, {
             serviceSecret: getPaymentFinalizeSecret(),
             reference,
-            amountKobo: transaction.amount,
+            amountKobo: transaction.requestedAmountKobo,
             currency: transaction.currency,
-            metadata: transaction.metadata
-              ? JSON.stringify(transaction.metadata)
-              : undefined,
+            metadata: JSON.stringify({
+              ...(transaction.metadata ?? {}),
+              paystackRequestedAmountKobo: transaction.requestedAmountKobo,
+              paystackChargedAmountKobo: transaction.chargedAmountKobo,
+              paystackFeesKobo: transaction.feesKobo,
+            }),
           });
         }
         payment = await convex.query(api.payments.getByReferenceWithOrder, {
